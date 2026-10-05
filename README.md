@@ -65,12 +65,18 @@
 
 ## Скриншоты
 
-```
-docs/screenshot-main.png
-docs/screenshot-calendar.png
-docs/screenshot-result.png
+### Главное окно
 
-```
+![Главное окно QTime](docs/screenshot-main.png)
+
+### Выбор даты через календарь
+
+![Календарь](docs/screenshot-calendar.png)
+
+### Готовый УРВ
+
+![Результат УРВ](docs/screenshot-result.png)
+
 
 <p align="right"><a href="#содержание">↑ к содержанию</a></p>
 
@@ -222,7 +228,7 @@ QTime/
 
 ### Файл 1 — «Отработанное время за месяц»
 ```
-| A | B | C | D | E | ... |
+| A | B                  | C             | D             | E     | ... |
 |---|--------------------|---------------|---------------|-------|-----|
 | № | Фамилия, инициалы  | 28 пн         | 29 вт         | 30 ср | ... |
 | 1 | Гайдукевич Людмила | 08:58 / 19:00 | 08:56 / 19:24 | ...   | ... |
@@ -252,14 +258,14 @@ QTime/
 - PyInstaller (сборка EXE)
 ```
 ### Разработчик
-```
+
 - **ФИО:** Atlasyuk Uriy Sergeevich
 - **GitHub:** [Kosmonaffter](https://github.com/Kosmonaffter)
 - **Email:** kosmonaffter@yandex.ru
 - **Телефон:** +7 (926) 375-25-67
 - **Telegram:** `kosmonafftsb`
 - **Instagram:** `kosmonaffter`
-```
+
 © 2026 KosmonafftTechnologies. Все права защищены.
 
 <p align="right"><a href="#содержание">↑ к содержанию</a></p>
