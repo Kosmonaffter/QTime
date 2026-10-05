@@ -43,6 +43,8 @@ def write_target(people, out_path: str):
     """
     workbook = Workbook()
     sheet = workbook.active
+    if sheet is None:
+        raise RuntimeError("Не удалось создать активный лист в книге")
     sheet.title = "УРВ"
 
     styles = _build_styles()

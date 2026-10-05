@@ -3,9 +3,18 @@
 
 Один и тот же цвет используется и в Tkinter, и в Excel,
 чтобы блоки визуально совпадали.
+
+Если сотрудников больше, чем базовых цветов, — генерируем оттенки
+с равномерным шагом по HSL. Это даёт предсказуемо контрастные
+соседние цвета.
 """
 
+import colorsys
+
 from core.constants import (
+    GEN_SATURATION,
+    GEN_LIGHTNESS,
+    GEN_HUE_STEP,
     HEADER_TINT_FACTOR,
     PERSON_COLORS,
 )
@@ -15,7 +24,8 @@ def pick_color(index: int) -> str:
     """
     Возвращает HEX-цвет для сотрудника по его порядковому номеру.
 
-    Если базовых цветов не хватило — генерирует новый оттенок.
+    Если базовых цветов не хватило — генерирует новый оттенок
+    с равномерным шагом по кругу оттенков.
     """
     if index < len(PERSON_COLORS):
         return PERSON_COLORS[index]
@@ -24,14 +34,16 @@ def pick_color(index: int) -> str:
 
 def _generate_color(seed: int) -> str:
     """
-    Генерирует пастельный HEX-цвет по числовому seed.
+    Генерирует контрастный пастельный HEX-цвет по числовому seed.
 
-    Формула даёт предсказуемый, но разнообразный результат.
+    Использует HSL: тон шагает по кругу золотым сечением,
+    насыщенность и яркость фиксированы.
     """
-    red = 200 + (seed * 37) % 56
-    green = 200 + (seed * 53) % 56
-    blue = 200 + (seed * 71) % 56
-    return f"#{red:02X}{green:02X}{blue:02X}"
+    hue = (seed * GEN_HUE_STEP) % 1.0
+    red, green, blue = colorsys.hls_to_rgb(
+        hue, GEN_LIGHTNESS, GEN_SATURATION
+    )
+    return _rgb_to_hex(red, green, blue)
 
 
 def header_color(base_color: str) -> str:
@@ -47,6 +59,15 @@ def header_color(base_color: str) -> str:
     return f"#{red:02X}{green:02X}{blue:02X}"
 
 
+def to_excel_color(color: str) -> str:
+    """
+    Tkinter-HEX '#FFE4B5' -> Excel-HEX 'FFE4B5'.
+
+    Excel не понимает решётку.
+    """
+    return color.lstrip("#")
+
+
 def _hex_to_rgb(color: str):
     """'#FFE4B5' -> (255, 228, 181)."""
     color = color.lstrip("#")
@@ -57,10 +78,9 @@ def _hex_to_rgb(color: str):
     )
 
 
-def to_excel_color(color: str) -> str:
-    """
-    Tkinter-HEX '#FFE4B5' -> Excel-HEX 'FFE4B5'.
-
-    Excel не понимает решётку.
-    """
-    return color.lstrip("#")
+def _rgb_to_hex(red: float, green: float, blue: float) -> str:
+    """(0.5, 0.5, 0.5) -> '#808080'."""
+    r = int(round(red * 255))
+    g = int(round(green * 255))
+    b = int(round(blue * 255))
+    return f"#{r:02X}{g:02X}{b:02X}"

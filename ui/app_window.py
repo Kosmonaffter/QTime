@@ -22,12 +22,16 @@ from core.constants import (
     DEFAULT_MONTH_MIN,
     DEFAULT_YEAR_MAX,
     DEFAULT_YEAR_MIN,
+    ERR_NO_DATA,
+    SEPARATOR_ROW_COLOR,
+    SEPARATOR_ROW_HEIGHT,
     STATUS_FG_IDLE,
     STATUS_FG_OK,
     TREE_BORDER_COLOR,
     TREE_ROW_HEIGHT,
     WINDOW_SIZE,
 )
+from core.errors import humanize_error, humanize_save_error
 from core.source_reader import read_source
 from core.target_writer import write_target
 from core.time_utils import calc_total
@@ -62,6 +66,7 @@ class AppWindow(tk.Tk):
             rowheight=TREE_ROW_HEIGHT,
             bordercolor=TREE_BORDER_COLOR,
             borderwidth=1,
+            relief="solid",
         )
         style.configure(
             "QTime.Treeview.Heading",
@@ -252,7 +257,14 @@ class AppWindow(tk.Tk):
         try:
             self.people = read_source(self.source_path, start_date)
         except Exception as error:
-            messagebox.showerror("Ошибка чтения", str(error))
+            messagebox.showerror(
+                "Ошибка чтения",
+                humanize_error(error),
+            )
+            return
+
+        if not self.people:
+            messagebox.showwarning("Внимание", ERR_NO_DATA)
             return
 
         self._fill_preview()
@@ -284,7 +296,10 @@ class AppWindow(tk.Tk):
         try:
             write_target(self.people, path)
         except Exception as error:
-            messagebox.showerror("Ошибка сохранения", str(error))
+            messagebox.showerror(
+                "Ошибка сохранения",
+                humanize_save_error(error),
+            )
             return
 
         messagebox.showinfo("Готово", f"Сохранено:\n{path}")
@@ -308,9 +323,15 @@ class AppWindow(tk.Tk):
             return None
 
     def _fill_preview(self):
-        """Заполняет таблицу, окрашивая блоки сотрудников."""
+        """Заполняет таблицу, окрашивая блоки и разделяя их."""
         for item in self._tree.get_children():
             self._tree.delete(item)
+
+        self._tree.tag_configure(
+            "separator",
+            background=SEPARATOR_ROW_COLOR,
+            font=("Segoe UI", SEPARATOR_ROW_HEIGHT),
+        )
 
         for index, person in enumerate(self.people):
             tag = f"person_{index}"
@@ -335,6 +356,13 @@ class AppWindow(tk.Tk):
                     ),
                 )
                 first_row = False
+
+            self._tree.insert(
+                "",
+                "end",
+                tags=("separator",),
+                values=("", "", "", "", ""),
+            )
 
     def show_about(self):
         """Открывает окно «О программе»."""
