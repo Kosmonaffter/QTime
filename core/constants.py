@@ -61,7 +61,6 @@ COL_WIDTH_FIO = 16
 COL_WIDTH_TIME = 12
 COL_WIDTH_TOTAL = 10
 COL_WIDTH_STATUS = 24
-COL_WIDTH_NORM = 10
 
 
 # ---------- Пределы периода ----------
@@ -208,6 +207,7 @@ OUT_COL_STATUS_2 = 6
 OUT_COL_NORM = 7
 OUT_COL_COUNT = 7
 OUT_HEADER_NORM = "норма"
+TREE_COLUMN_COUNT = 7
 
 
 # ---------- Заголовки диалогов ----------

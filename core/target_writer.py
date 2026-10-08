@@ -18,7 +18,6 @@ from core.constants import (
     ABSENT,
     BORDER_COLOR,
     COL_WIDTH_FIO,
-    COL_WIDTH_NORM,
     COL_WIDTH_STATUS,
     COL_WIDTH_TIME,
     COL_WIDTH_TOTAL,
@@ -30,12 +29,10 @@ from core.constants import (
     HEADER_TOTAL,
     OUT_COL_DATE,
     OUT_COL_INCOME,
-    OUT_COL_NORM,
     OUT_COL_OUTCOME,
     OUT_COL_STATUS_1,
     OUT_COL_STATUS_2,
     OUT_COL_TOTAL,
-    OUT_HEADER_NORM,
     STATUS_COLORS,
     STATUS_TEXT_COLORS,
     WEEKEND_INDEXES,
@@ -104,7 +101,7 @@ def _write_person_header(sheet, row, fio, base_color, styles):
         HEADER_INCOME,
         HEADER_OUTCOME,
         HEADER_TOTAL,
-        "", "", "",
+        "", "",
     )
     for offset, label in enumerate(labels):
         column = OUT_COL_DATE + offset
@@ -132,7 +129,6 @@ def _write_day_row(sheet, row, day, base_color, schedule, styles):
         total,
         evaluation.status_late,
         evaluation.status_incomplete,
-        evaluation.norm_text if schedule else "",
     )
 
     for offset, value in enumerate(values):
@@ -222,7 +218,6 @@ def _apply_column_widths(sheet):
         "D": COL_WIDTH_TOTAL,
         "E": COL_WIDTH_STATUS,
         "F": COL_WIDTH_STATUS,
-        "G": COL_WIDTH_NORM,
     }
     for column, width in widths.items():
         sheet.column_dimensions[column].width = width

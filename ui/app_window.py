@@ -59,6 +59,7 @@ from core.constants import (
     STATUS_FG_IDLE,
     STATUS_FG_OK,
     TREE_BORDER_COLOR,
+    TREE_COLUMN_COUNT,
     TREE_ROW_HEIGHT,
     TREE_SELECTED_BG,
     TREE_SELECTED_FG,
@@ -452,7 +453,7 @@ class AppWindow(tk.Tk):
                 "",
                 "end",
                 tags=("separator",),
-                values=("",) * OUT_COL_COUNT,
+                values=("",) * TREE_COLUMN_COUNT,
             )
 
     def _insert_day_row(self, fio, day, schedule, base_tag, is_first_row):
