@@ -7,8 +7,12 @@
 import tkinter as tk
 from tkinter import ttk
 
+from core.constants import LOGO_FILE
+from ui.resource_utils import resource_path
+
 
 ABOUT_TITLE = "О программе QTime"
+MAX_LOGO_WIDTH = 400
 ABOUT_HEADER = "QTime — учёт рабочего времени"
 ABOUT_SUMMARY = (
     "Десктопное приложение для еженедельной обработки табеля "
@@ -40,17 +44,21 @@ class AboutDialog(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title(ABOUT_TITLE)
-        self.geometry("480x520")
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
 
         self._build_ui()
+        self._center_on_parent(parent)
+        self.update_idletasks()
+        self.geometry("")
 
     def _build_ui(self):
         """Собирает содержимое окна."""
         frame = ttk.Frame(self, padding=16)
         frame.pack(fill="both", expand=True)
+
+        self._add_logo(frame)
 
         ttk.Label(
             frame,
@@ -104,3 +112,39 @@ class AboutDialog(tk.Toplevel):
             text="Закрыть",
             command=self.destroy,
         ).pack(side="right")
+
+    def _add_logo(self, parent):
+        """Добавляет логотип компании, если файл найден."""
+        logo_path = resource_path(LOGO_FILE)
+        if not logo_path.exists():
+            return
+        try:
+            image = tk.PhotoImage(file=str(logo_path))
+        except tk.TclError:
+            return
+
+        image = self._fit_logo(image)
+        self._logo_image = image
+        ttk.Label(parent, image=image).pack(
+            anchor="center", pady=(0, 12)
+        )
+
+    def _fit_logo(self, image):
+        """
+        Уменьшает логотип, если он шире MAX_LOGO_WIDTH.
+
+        Возвращает либо исходный, либо уменьшенный через subsample.
+        """
+        if image.width() <= MAX_LOGO_WIDTH:
+            return image
+        factor = image.width() // MAX_LOGO_WIDTH + 1
+        return image.subsample(factor, factor)
+
+    def _center_on_parent(self, parent):
+        """Ставит окно по центру родительского."""
+        self.update_idletasks()
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+        x = parent.winfo_rootx() + (parent.winfo_width() - width) // 2
+        y = parent.winfo_rooty() + (parent.winfo_height() - height) // 2
+        self.geometry(f"+{x}+{y}")

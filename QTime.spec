@@ -1,12 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_data_files
+
+datas = collect_data_files("tkcalendar")
+datas += [("assets", "assets")]
 
 a = Analysis(
-    ['main.py'],
+    ["main.py"],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=["babel.numbers"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +26,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='QTime',
+    name="QTime",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -35,5 +39,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets/qtime.ico'],
+    icon="assets/qtime.ico",
 )
