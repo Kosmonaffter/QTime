@@ -1,5 +1,5 @@
 """
-Вкладка СК — сверка Болида с ЗУП.
+Вкладка СК — сверка Болида с Табель.
 
 Содержит выбор двух файлов, месяца и года, кнопки Обработать
 и Сохранить, таблицу итогов и таблицу дней по горизонтали.
@@ -78,7 +78,7 @@ ZUP_FILETYPES = (
 
 
 class SkTab(ttk.Frame):
-    """Вкладка СК — сверка Болида с ЗУП."""
+    """Вкладка СК — сверка Болида с Табель."""
 
     def __init__(self, parent):
         super().__init__(parent, padding=PANEL_PADDING)
@@ -195,7 +195,7 @@ class SkTab(ttk.Frame):
     # ---------- Таблица итогов ----------
 
     def _build_summary(self):
-        """Таблица итогов: ФИО | Факт | ЗУП | Расхождение."""
+        """Таблица итогов: ФИО | Факт | Табель | Расхождение."""
         frame = ttk.Frame(self, padding=(PAD_S, PAD_XS))
         frame.pack(fill="x", expand=False)
 
@@ -211,7 +211,7 @@ class SkTab(ttk.Frame):
         headings = {
             "fio": "ФИО",
             "fact": "Факт",
-            "zup": "ЗУП",
+            "zup": "Табель",
             "diff": "Расхождение",
         }
         for key, text in headings.items():
@@ -271,9 +271,9 @@ class SkTab(ttk.Frame):
         )
 
     def choose_zup(self):
-        """Открывает диалог выбора ЗУП."""
+        """Открывает диалог выбора Табель."""
         path = filedialog.askopenfilename(
-            title="Выберите файл ЗУП",
+            title="Выберите файл Табель",
             filetypes=ZUP_FILETYPES,
         )
         if not path:
@@ -476,7 +476,7 @@ def _summary_tag(person) -> str:
 
 
 def _is_empty_day(day) -> bool:
-    """Пустой день — нет ни Болида, ни ЗУП."""
+    """Пустой день — нет ни Болида, ни Табель."""
     if day["income"] or day["outcome"] or day["zup"] is not None:
         return False
     return day["status"] == "gray"

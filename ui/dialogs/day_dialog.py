@@ -1,7 +1,7 @@
 """
 Модальное окно с деталями одного дня СК.
 
-Показывает приход/уход/факт/ЗУП и расхождение.
+Показывает приход/уход/факт/Табель и расхождение.
 """
 
 import tkinter as tk
@@ -43,7 +43,7 @@ class DayDialog(tk.Toplevel):
             ("Приход", day["income"] or ""),
             ("Уход", day["outcome"] or ""),
             ("Факт", day["fact_text"] or ""),
-            ("ЗУП", _format_zup(day)),
+            ("Табель", _format_zup(day)),
         )
         row = 1
         for label, value in rows:
@@ -97,7 +97,7 @@ def _format_date(day):
 
 
 def _format_zup(day) -> str:
-    """Текстовое представление ЗУП."""
+    """Текстовое представление Табель."""
     if day["zup"] is None:
         return ""
     return f"{day['zup']:g}"

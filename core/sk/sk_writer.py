@@ -1,5 +1,5 @@
 """
-Запись файла СК — сверка Болида с ЗУП.
+Запись файла СК — сверка Болида с Табель.
 
 Пишет только расхождения. ОК-дни пропускаются.
 Каждый сотрудник — блок с итоговой строкой.
@@ -184,7 +184,7 @@ def _write_total(sheet, row: int, person, styles):
 
     text = (
         f"Общее время работы: "
-        f"Факт {fact:.2f} | ЗУП {zup:.2f} | "
+        f"Факт {fact:.2f} | Табель {zup:.2f} | "
         f"Расхождение {sign}{diff_text}"
     )
     font = _build_total_font(diff, styles)
@@ -239,7 +239,7 @@ def _collect_deviations(person):
 
 
 def _is_empty(day):
-    """Пустой день — нет ни Болида, ни ЗУП, ни факта."""
+    """Пустой день — нет ни Болида, ни Табель, ни факта."""
     if day["income"] or day["outcome"] or day["zup"] is not None:
         return False
     return day["status"] == STATUS_GRAY

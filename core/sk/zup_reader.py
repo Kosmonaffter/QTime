@@ -1,5 +1,5 @@
 """
-Чтение листа «Месяц Год» из файла ЗУП.
+Чтение листа «Месяц Год» из файла Табель.
 
 Поддерживает оба формата: .xlsx (openpyxl) и .xls (xlrd).
 Находит раздел «Склад» в колонке A и читает таблицу сотрудников
@@ -35,7 +35,7 @@ def read_zup(path: str, month: int, year: int):
 
     header_row = _find_section_header(grid)
     if header_row is None:
-        raise ValueError("Не найден раздел «Склад» в файле ЗУП")
+        raise ValueError("Не найден раздел «Склад» в файле Табель")
 
     return _read_people(grid, header_row, month, year)
 
@@ -67,7 +67,7 @@ def _read_grid_xlsx(path: str, sheet_name: str):
     workbook = load_workbook(path, data_only=True)
     if sheet_name not in workbook.sheetnames:
         workbook.close()
-        raise ValueError(f"Лист «{sheet_name}» не найден в файле ЗУП")
+        raise ValueError(f"Лист «{sheet_name}» не найден в файле Табель")
     sheet = workbook[sheet_name]
 
     grid = []
@@ -83,7 +83,7 @@ def _read_grid_xls(path: str, sheet_name: str):
 
     workbook = xlrd.open_workbook(path)
     if sheet_name not in workbook.sheet_names():
-        raise ValueError(f"Лист «{sheet_name}» не найден в файле ЗУП")
+        raise ValueError(f"Лист «{sheet_name}» не найден в файле Табель")
     sheet = workbook.sheet_by_name(sheet_name)
 
     grid = []

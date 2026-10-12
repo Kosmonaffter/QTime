@@ -41,7 +41,7 @@ def format_fact_total(value: float) -> str:
 
 
 def format_zup_total(value: float) -> str:
-    """ЗУП в итоге: 165.50."""
+    """Табель в итоге: 165.50."""
     return f"{value:.2f}"
 
 
@@ -49,7 +49,7 @@ def day_diff_text(day) -> str:
     """
     Текст колонки «Расхождение» для дня.
 
-    Приоритет: расчёт → 'нет ЗУП'.
+    Приоритет: расчёт → 'нет в Табеле'.
     """
     from core.sk.constants import NO_DATA_IN_ZUP, STATUS_YELLOW
 

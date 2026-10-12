@@ -8,7 +8,7 @@ BOLID_EVENT_IN = "вход"
 BOLID_EVENT_OUT = "выход"
 BOLID_DATE_FORMAT = "%d.%m.%Y %H:%M:%S"
 
-# ---------- ЗУП ----------
+# ---------- Табель ----------
 ZUP_SECTION_MARKER = "Склад"
 ZUP_FIO_COLUMN = 1
 ZUP_NAME_COLUMN = 2
@@ -45,7 +45,7 @@ STATUS_COLORS = {
 
 # ---------- Сообщения об отсутствии данных ----------
 NO_DATA_IN_BOLID = "в Болиде информации нет"
-NO_DATA_IN_ZUP = "нет в ЗУП"
+NO_DATA_IN_ZUP = "нет в Табеле"
 NO_INCOME = "нет входа"
 NO_OUTCOME = "нет выхода"
 
@@ -78,18 +78,18 @@ SK_DIALOG_TITLE = "Сверка СК"
 SK_MONTH_LABEL = "Месяц:"
 SK_YEAR_LABEL = "Год:"
 SK_OPEN_BOLID = "Открыть Болид (CSV)"
-SK_OPEN_ZUP = "Открыть ЗУП (xls/xlsx)"
+SK_OPEN_ZUP = "Открыть Табель (xls/xlsx)"
 SK_PROCESS = "Обработать"
 SK_SAVE = "Сохранить СК"
 
 SK_MSG_BOLID_FIRST = "Сначала откройте файл Болида"
-SK_MSG_ZUP_FIRST = "Сначала откройте файл ЗУП"
+SK_MSG_ZUP_FIRST = "Сначала откройте файл Табель"
 SK_MSG_PROCESS_FIRST = "Сначала нажмите «Обработать»"
 SK_MSG_SAVED = "Файл сохранён:\n{path}"
 SK_MSG_NO_DATA = "Нет данных для сверки"
 SK_MSG_PROCESSED = "Обработано: {count} чел., {month} {year}"
 SK_MSG_BOLID_SELECTED = "Болид: {name}"
-SK_MSG_ZUP_SELECTED = "ЗУП: {name}"
+SK_MSG_ZUP_SELECTED = "Табель: {name}"
 
 SK_DAY_DIALOG_TITLE = "Детали дня — {fio}"
 
@@ -102,7 +102,7 @@ SK_DAY_COLORS = {
     "green": "#C2F0C2",     # ОК
     "red": "#FFC2C2",       # недоработка
     "orange": "#FFE0B3",    # переработка
-    "yellow": "#FFE9A8",    # нет ЗУП
+    "yellow": "#FFE9A8",    # нет Табель
     "gray": "#EDEDED",      # нет данных
 }
 

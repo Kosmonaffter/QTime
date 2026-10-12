@@ -7,6 +7,7 @@ Tkinter Treeview не умеет красить отдельные ячейки,
 """
 
 import tkinter as tk
+from typing import Literal, cast
 
 from core.sk.constants import (
     SK_CELL_HEIGHT,
@@ -20,6 +21,14 @@ from core.sk.constants import (
     SK_CELL_FONT,
     SK_EMPTY_CELL_BG,
 )
+
+
+_VALID_ANCHORS = frozenset(
+    {"nw", "n", "ne", "w", "center", "e", "sw", "s", "se"}
+)
+_AnchorType = Literal[
+    "nw", "n", "ne", "w", "center", "e", "sw", "s", "se"
+]
 
 
 class SkDayGrid(tk.Canvas):
@@ -184,9 +193,13 @@ class SkDayGrid(tk.Canvas):
             fill=bg, outline=SK_CELL_BORDER,
         )
         text_x = x + 4 if anchor == "w" else x + width // 2
+        anchor_lit = cast(
+            _AnchorType,
+            anchor if anchor in _VALID_ANCHORS else "center",
+        )
         self.create_text(
             text_x, y + height // 2,
-            text=text, fill=fg, font=font, anchor=anchor,
+            text=text, fill=fg, font=font, anchor=anchor_lit,
         )
         if row >= 0 and col >= 0:
             tag = f"cell_{row}_{col}"
