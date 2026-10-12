@@ -11,3 +11,4 @@ pywin32-ctypes==0.2.3
 tkcalendar==1.6.1
 tzdata==2026.5
 zipp==3.23.1
+xlrd==1.2.0

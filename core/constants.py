@@ -7,9 +7,13 @@
 
 # ---------- Общие ----------
 APP_TITLE = "QTime — учёт рабочего времени"
-WINDOW_SIZE = "1100x700"
+WINDOW_SIZE = "1250x750"
 WINDOW_ICON_FILE = "assets/qtime_icon.ico"
 LOGO_FILE = "assets/logo.png"
+
+# ---------- Вкладки ----------
+TAB_BC_TITLE = "БЦ"
+TAB_SK_TITLE = "СК"
 
 # ---------- Служебные строки ----------
 RESPONSIBLE_PREFIX = "ответственное"   # строка-«стоп» в конце файла 1
