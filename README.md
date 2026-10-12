@@ -129,9 +129,6 @@
 
 ![Сетка дней СК](docs/screenshot-result1.png)
 
-> **Примечание.** Скриншоты `screenshot-sk-*` — placeholder.
-> Положи реальные PNG-файлы в `docs/`, и они отобразятся.
-
 <p align="right"><a href="#содержание">↑ к содержанию</a></p>
 
 ---
