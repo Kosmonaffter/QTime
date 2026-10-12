@@ -14,7 +14,6 @@ from core.constants import (
     ERR_FILE_CORRUPT,
     ERR_FILE_NOT_FOUND,
     ERR_HEADER_NOT_FOUND,
-    ERR_NO_DATA,
     ERR_OLD_FORMAT,
     ERR_SAVE_FAILED,
     ERR_UNKNOWN,
