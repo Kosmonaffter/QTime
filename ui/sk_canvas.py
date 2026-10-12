@@ -7,6 +7,7 @@ Tkinter Treeview не умеет красить отдельные ячейки,
 """
 
 import tkinter as tk
+from tkinter import ttk
 from typing import Literal, cast
 
 from core.sk.constants import (
@@ -224,13 +225,19 @@ class SkDayGrid(tk.Canvas):
 
 
 # ---------- Хелперы ----------
-
 def _cell_text(day) -> str:
-    """Текст ячейки — часы факта или '-'."""
+    """
+    Текст ячейки — часы факта или '-'.
+
+    Округляем до 0.5 — полчаса, чтобы попасть в реальную смену.
+    """
     fact = day.get("fact_hours")
     if fact is None:
         return "-"
-    return f"{fact:.0f}"
+    rounded = round(fact * 2) / 2
+    if rounded == int(rounded):
+        return f"{int(rounded)}"
+    return f"{rounded:.1f}"
 
 
 def _cell_color(day) -> str:
@@ -239,3 +246,44 @@ def _cell_color(day) -> str:
     if status in SK_DAY_COLORS:
         return SK_DAY_COLORS[status]
     return SK_EMPTY_CELL_BG
+
+
+class SkLegend(ttk.Frame):
+    """
+    Легенда цветов для Canvas-сетки.
+
+    Показывает: что означает каждый цвет ячейки.
+    """
+
+    def __init__(self, parent):
+        super().__init__(parent, padding=(4, 6))
+        self._build_items()
+
+    def _build_items(self):
+        """Строит список цветных квадратиков с подписями."""
+        for status, label in _LEGEND_ITEMS:
+            self._add_item(status, label)
+
+    def _add_item(self, status: str, label: str):
+        """Один цветной квадратик + текст."""
+        color = SK_DAY_COLORS.get(status, SK_EMPTY_CELL_BG)
+        box = tk.Label(
+            self,
+            text="  ",
+            bg=color,
+            borderwidth=1,
+            relief="solid",
+        )
+        box.pack(side="left", padx=(8, 2))
+        ttk.Label(self, text=label).pack(side="left", padx=(0, 8))
+
+
+# ---------- Легенда ----------
+
+_LEGEND_ITEMS = (
+    ("green", "всё в порядке"),
+    ("red", "недоработка"),
+    ("orange", "переработка"),
+    ("yellow", "нет в Табеле"),
+    ("gray", "нет данных"),
+)

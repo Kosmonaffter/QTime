@@ -50,7 +50,6 @@ from core.sk.constants import (
     SK_TOTAL_OK,
     SK_YEAR_LABEL,
 )
-from ui.sk_canvas import SkDayGrid
 from core.sk.sk_status import (
     day_diff_text,
     format_diff_hours,
@@ -60,6 +59,7 @@ from core.sk.sk_status import (
 from core.sk.sk_writer import write_sk
 from core.sk.zup_reader import read_zup
 from ui.dialogs.day_dialog import DayDialog
+from ui.sk_canvas import SkDayGrid, SkLegend
 
 
 MONTHS_RU = (
@@ -244,7 +244,10 @@ class SkTab(ttk.Frame):
     # ---------- Таблица дней ----------
 
     def _build_days_table(self):
-        """Таблица дней по горизонтали (Canvas-сетка)."""
+        """Таблица дней по горизонтали (Canvas-сетка) + легенда."""
+        legend = SkLegend(self)
+        legend.pack(fill="x", padx=PAD_S)
+
         wrapper = ttk.Frame(self, padding=(PAD_S, PAD_XS))
         wrapper.pack(fill="both", expand=True)
 
