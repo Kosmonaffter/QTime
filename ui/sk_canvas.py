@@ -76,7 +76,9 @@ class SkDayGrid(tk.Canvas):
         """Клик по ячейке."""
         if self._on_cell_click is None:
             return
-        cell = self._identify_cell(event.x, event.y)
+        canvas_x = int(self.canvasx(event.x))
+        canvas_y = int(self.canvasy(event.y))
+        cell = self._identify_cell(canvas_x, canvas_y)
         if cell is None:
             return
         row_index, day_index = cell
