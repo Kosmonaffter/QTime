@@ -21,6 +21,9 @@ from core.sk.constants import (
     SK_CELL_BORDER,
     SK_CELL_FONT,
     SK_EMPTY_CELL_BG,
+    SK_HOVER_COLOR,
+    SK_HOVER_TAG,
+    SK_HOVER_WIDTH,
 )
 
 
@@ -68,6 +71,8 @@ class SkDayGrid(tk.Canvas):
     def _bind_events(self):
         self.bind("<Configure>", lambda _e: self._redraw())
         self.bind("<Button-1>", self._handle_click)
+        self.bind("<Motion>", self._handle_motion)
+        self.bind("<Leave>", self._handle_leave)
         self.bind("<MouseWheel>", self._handle_wheel)
         self.bind("<Button-4>", self._handle_wheel)
         self.bind("<Button-5>", self._handle_wheel)
@@ -84,6 +89,41 @@ class SkDayGrid(tk.Canvas):
         row_index, day_index = cell
         self._on_cell_click(row_index, day_index)
 
+    def _handle_motion(self, event):
+        """Подсветка ячейки под курсором."""
+        canvas_x = int(self.canvasx(event.x))
+        canvas_y = int(self.canvasy(event.y))
+        cell = self._identify_cell(canvas_x, canvas_y)
+        if cell is None:
+            self._clear_hover()
+            return
+        row_index, day_index = cell
+        self._show_hover(row_index, day_index)
+
+    def _handle_leave(self, _event):
+        """Убирает подсветку при уходе курсора с Canvas."""
+        self._clear_hover()
+
+    # ---------- Подсветка ----------
+
+    def _show_hover(self, row_index: int, day_index: int):
+        """Рисует рамку вокруг ячейки под курсором."""
+        self._clear_hover()
+        x = SK_COL_WIDTH_FIO + day_index * SK_COL_WIDTH_DAY
+        y = SK_CELL_HEIGHT * (row_index + 1)
+        self.create_rectangle(
+            x + 1, y + 1,
+            x + SK_COL_WIDTH_DAY - 1,
+            y + SK_CELL_HEIGHT - 1,
+            outline=SK_HOVER_COLOR,
+            width=SK_HOVER_WIDTH,
+            tags=SK_HOVER_TAG,
+        )
+
+    def _clear_hover(self):
+        """Удаляет все элементы подсветки."""
+        self.delete(SK_HOVER_TAG)
+
     def _handle_wheel(self, event):
         """Прокрутка колесом."""
         if event.num == 4:
@@ -93,6 +133,7 @@ class SkDayGrid(tk.Canvas):
         else:
             delta = -1 if event.delta > 0 else 1
         self.yview_scroll(delta, "units")
+        self._clear_hover()
 
     # ---------- Отрисовка ----------
 

@@ -124,6 +124,11 @@ SK_CELL_FONT = ("Segoe UI", 9)
 SK_CELL_BORDER = "#B0B0B0"
 SK_EMPTY_CELL_BG = "#FFFFFF"
 
+# ---------- Подсветка под курсором ----------
+SK_HOVER_TAG = "hover"
+SK_HOVER_COLOR = "#2E7DD1"
+SK_HOVER_WIDTH = 2
+
 # ---------- Фильтры ----------
 SK_FILTER_LATE = "Только недоработка"
 SK_FILTER_OVER = "Только переработка"
