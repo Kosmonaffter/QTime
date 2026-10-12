@@ -14,9 +14,11 @@ from core.constants import (
     ERR_FILE_CORRUPT,
     ERR_FILE_NOT_FOUND,
     ERR_HEADER_NOT_FOUND,
+    ERR_NO_DATA,
     ERR_OLD_FORMAT,
     ERR_SAVE_FAILED,
     ERR_UNKNOWN,
+    ERR_XLS_XML,
     ERRNO_FILE_NOT_FOUND,
     ERRNO_PERMISSION_DENIED,
     VALUE_ERROR_HEADER_MARKERS,
@@ -35,6 +37,9 @@ def humanize_error(error: Exception) -> str:
 
     if isinstance(error, BadZipFile):
         return ERR_FILE_CORRUPT
+
+    if _is_xlrd_error(error):
+        return _humanize_xlrd_error(error)
 
     if isinstance(error, PermissionError):
         return ERR_FILE_BUSY
@@ -94,3 +99,36 @@ def humanize_save_error(error: Exception) -> str:
     if isinstance(error, (PermissionError, OSError)):
         return ERR_SAVE_FAILED
     return ERR_UNKNOWN.format(details=str(error))
+
+
+def _is_xlrd_error(error: Exception) -> bool:
+    """
+    Проверяет, что исключение пришло из библиотеки xlrd.
+
+    xlrd не всегда импортируем — определяем по имени класса
+    и по тексту сообщения.
+    """
+    name = type(error).__name__
+    if "XLRDError" in name:
+        return True
+    text = str(error)
+    if "Expected BOF record" in text:
+        return True
+    if "Unsupported format" in text and "xls" in text.lower():
+        return True
+    return False
+
+
+def _humanize_xlrd_error(error: Exception) -> str:
+    """
+    Разбирает ошибки xlrd.
+
+    Если внутри .xls лежит XML (SpreadsheetML) — сообщаем
+    про маскировку. Иначе — общий текст про битый формат.
+    """
+    text = str(error)
+    if "XML" in text or "<?xml" in text or "SpreadsheetML" in text:
+        return ERR_XLS_XML
+    if "Expected BOF record" in text:
+        return ERR_XLS_XML
+    return ERR_FILE_CORRUPT

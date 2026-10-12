@@ -23,7 +23,7 @@ from core.constants import (
     PAD_XS,
     PANEL_PADDING,
 )
-from core.errors import humanize_save_error
+from core.errors import humanize_error, humanize_save_error
 from core.sk.bolid_reader import read_bolid
 from core.sk.comparator import compare
 from core.sk.constants import (
@@ -303,7 +303,7 @@ class SkTab(ttk.Frame):
         except Exception as error:
             messagebox.showerror(
                 DLG_TITLE_ERROR_READ,
-                str(error),
+                humanize_error(error),
             )
             return
 
