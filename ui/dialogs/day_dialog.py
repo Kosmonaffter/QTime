@@ -11,6 +11,7 @@ from core.sk.constants import (
     SK_DAY_DIALOG_TITLE,
     SK_TOTAL_NEGATIVE,
     SK_TOTAL_OK,
+    SK_TOTAL_OVER,
 )
 
 
@@ -104,9 +105,17 @@ def _format_zup(day) -> str:
 
 
 def _diff_color(minutes):
-    """Цвет для недоработки (минус) — красный, для ОК — зелёный."""
+    """
+    Цвет расхождения в модалке.
+
+    Минус — красный (недоработка),
+    плюс — оранжевый (переработка),
+    ноль — зелёный.
+    """
     if minutes is None:
         return None
     if minutes < 0:
         return SK_TOTAL_NEGATIVE
+    if minutes > 0:
+        return SK_TOTAL_OVER
     return SK_TOTAL_OK

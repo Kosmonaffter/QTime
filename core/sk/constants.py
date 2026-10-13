@@ -122,6 +122,7 @@ SK_ROW_PRIORITY = ("red", "orange", "yellow", "purple", "green", "gray")
 # Цвета текста в итогах (Tkinter — с #)
 SK_TOTAL_NEGATIVE = "#C00000"
 SK_TOTAL_OK = "#006000"
+SK_TOTAL_OVER = "#C07000"
 
 # ---------- Canvas-сетка ----------
 SK_CELL_HEIGHT = 24

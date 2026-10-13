@@ -254,9 +254,10 @@ def _diff_minutes(fact_hours, zup_hours, status):
     """
     Считает расхождение в минутах.
 
-    Факт − (Табель + обед). Переработка — плюс, недоработка — минус.
+    Факт − (Табель + обед).
+    Переработка — плюс, недоработка — минус.
     """
-    if status not in (STATUS_GREEN, STATUS_RED):
+    if status not in (STATUS_GREEN, STATUS_RED, STATUS_ORANGE):
         return None
     if fact_hours is None or zup_hours is None:
         return None
@@ -270,8 +271,18 @@ def _sum_fact(days):
 
 
 def _sum_zup(days):
-    """Сумма Табель по дням."""
-    return sum(d["zup"] for d in days if d["zup"])
+    """
+    Сумма ЗУП по дням с учётом обеда.
+
+    К каждому дню с часами прибавляется LUNCH_HOURS,
+    чтобы итог совпадал с логикой сравнения по дням.
+    """
+    total = 0.0
+    for day in days:
+        if day["zup"] is None:
+            continue
+        total += day["zup"] + LUNCH_HOURS
+    return total
 
 
 def _is_total_ok(fact: float, zup: float) -> bool:
