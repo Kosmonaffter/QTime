@@ -9,11 +9,19 @@ BOLID_EVENT_OUT = "выход"
 BOLID_DATE_FORMAT = "%d.%m.%Y %H:%M:%S"
 
 # ---------- Табель ----------
-ZUP_SECTION_MARKER = "Склад"
-ZUP_FIO_COLUMN = 1
-ZUP_NAME_COLUMN = 2
-ZUP_GRAPH_COLUMN = 5
-ZUP_DAY_START_COLUMN = 15       # колонка '1' (первое число месяца)
+TABEL_SECTION_MARKER = "Склад"
+TABEL_FIO_COLUMN = 1
+TABEL_NAME_COLUMN = 2
+TABEL_GRAPH_COLUMN = 5
+TABEL_HEADER_MARKER = "Фамилия"
+
+# Текст ошибки при несоответствии дней
+ERR_TABEL_DAY_MISMATCH = (
+    "В табеле нарушен порядок дней месяца.\n"
+    "Ожидается: 1, 2, 3, ...\n"
+    "Пропущено число: {missing}\n\n"
+    "Проверьте файл табеля."
+)
 
 # ---------- График ----------
 GRAPH_MAIN = "Основной график"
@@ -32,8 +40,9 @@ TOTAL_TOLERANCE_HOURS = 0.5
 STATUS_GREEN = "green"
 STATUS_RED = "red"
 STATUS_ORANGE = "orange"
-STATUS_YELLOW = "yellow"
-STATUS_GRAY = "gray"
+STATUS_YELLOW = "yellow"       # нет в Табеле
+STATUS_PURPLE = "purple"       # нет в Болиде
+STATUS_GRAY = "gray"           # нет данных нигде
 
 STATUS_COLORS = {
     STATUS_GREEN: "#C2F0C2",
@@ -77,19 +86,19 @@ SK_OUT_COL_DIFF = 5
 SK_DIALOG_TITLE = "Сверка СК"
 SK_MONTH_LABEL = "Месяц:"
 SK_YEAR_LABEL = "Год:"
-SK_OPEN_BOLID = "Открыть Болид (CSV)"
-SK_OPEN_ZUP = "Открыть Табель (xls/xlsx)"
+SK_OPEN_BOLID = "Открыть СКУД/БОЛИД (CSV)"
+SK_OPEN_TABEL = "Открыть Табель (xls/xlsx)"
 SK_PROCESS = "Обработать"
 SK_SAVE = "Сохранить СК"
 
 SK_MSG_BOLID_FIRST = "Сначала откройте файл Болида"
-SK_MSG_ZUP_FIRST = "Сначала откройте файл Табель"
+SK_MSG_TABEL_FIRST = "Сначала откройте файл Табель"
 SK_MSG_PROCESS_FIRST = "Сначала нажмите «Обработать»"
 SK_MSG_SAVED = "Файл сохранён:\n{path}"
 SK_MSG_NO_DATA = "Нет данных для сверки"
 SK_MSG_PROCESSED = "Обработано: {count} чел., {month} {year}"
 SK_MSG_BOLID_SELECTED = "Болид: {name}"
-SK_MSG_ZUP_SELECTED = "Табель: {name}"
+SK_MSG_TABEL_SELECTED = "Табель: {name}"
 
 SK_DAY_DIALOG_TITLE = "Детали дня — {fio}"
 
@@ -102,12 +111,13 @@ SK_DAY_COLORS = {
     "green": "#C2F0C2",     # ОК
     "red": "#FFC2C2",       # недоработка
     "orange": "#FFE0B3",    # переработка
-    "yellow": "#FFE9A8",    # нет Табель
-    "gray": "#EDEDED",      # нет данных
+    "yellow": "#BFE0F5",    # нет в Табеле (голубой)
+    "purple": "#D9C2F0",    # нет в Болиде (сиреневый)
+    "gray": "#EDEDED",      # нет данных нигде (серый)
 }
 
 # Приоритет для окраски строки (сверху — самый важный)
-SK_ROW_PRIORITY = ("red", "orange", "yellow", "green", "gray")
+SK_ROW_PRIORITY = ("red", "orange", "yellow", "purple", "green", "gray")
 
 # Цвета текста в итогах (Tkinter — с #)
 SK_TOTAL_NEGATIVE = "#C00000"
@@ -115,12 +125,12 @@ SK_TOTAL_OK = "#006000"
 
 # ---------- Canvas-сетка ----------
 SK_CELL_HEIGHT = 24
-SK_COL_WIDTH_DAY = 34
+SK_COL_WIDTH_DAY = 42
 SK_COL_WIDTH_FIO = 220
 SK_HEADER_BG = "#D9E1F2"
 SK_HEADER_FG = "#000000"
 SK_HEADER_FONT = ("Segoe UI", 9, "bold")
-SK_CELL_FONT = ("Segoe UI", 9)
+SK_CELL_FONT = ("Segoe UI", 8)
 SK_CELL_BORDER = "#B0B0B0"
 SK_EMPTY_CELL_BG = "#FFFFFF"
 
@@ -128,9 +138,19 @@ SK_EMPTY_CELL_BG = "#FFFFFF"
 SK_HOVER_TAG = "hover"
 SK_HOVER_COLOR = "#2E7DD1"
 SK_HOVER_WIDTH = 2
+# ---------- Подсветка выбранной строки ----------
+SK_SELECTED_ROW_BG = "#FFF2A8"
 
 # ---------- Фильтры ----------
 SK_FILTER_LATE = "Только недоработка"
 SK_FILTER_OVER = "Только переработка"
 SK_FILTER_STATUSES_LATE = ("red",)
 SK_FILTER_STATUSES_OVER = ("orange",)
+
+# ---------- Показ Факт / Табель ----------
+SK_SHOW_FACT_LABEL = "Показать Болид"
+SK_SHOW_TABEL_LABEL = "Показать Табель"
+
+# Цвета текста в ячейках
+SK_FACT_TEXT_COLOR = "#000000"      # чёрный — Болид
+SK_TABEL_TEXT_COLOR = "#2E7DD1"     # синий — Табель

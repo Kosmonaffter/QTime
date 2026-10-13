@@ -40,7 +40,7 @@ def format_fact_total(value: float) -> str:
     return f"{value:.2f}"
 
 
-def format_zup_total(value: float) -> str:
+def format_tabel_total(value: float) -> str:
     """Табель в итоге: 165.50."""
     return f"{value:.2f}"
 

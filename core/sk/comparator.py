@@ -22,6 +22,7 @@ from core.sk.constants import (
     STATUS_GRAY,
     STATUS_GREEN,
     STATUS_ORANGE,
+    STATUS_PURPLE,
     STATUS_RED,
     STATUS_YELLOW,
     TOTAL_TOLERANCE_HOURS,
@@ -220,15 +221,23 @@ def _day_status(bolid, zup_hours, fact_hours):
     """
     Определяет статус дня.
 
-    green  — Табель + 1 == Факт;
+    green  — ЗУП + 1 == Факт;
     red    — недоработка (факт < норма);
     orange — переработка (факт > норма);
-    yellow — есть в Болиде, нет Табеле;
-    gray   — нет нигде.
+    yellow — есть в Болиде, нет в Табеле;
+    purple — есть в Табеле, нет в Болиде;
+    gray   — нет ни в Болиде, ни в Табеле.
     """
-    if bolid is None or zup_hours is None:
-        return STATUS_YELLOW if bolid is not None else STATUS_GRAY
+    if bolid is None and zup_hours is None:
+        return STATUS_GRAY
+    if bolid is not None and zup_hours is None:
+        return STATUS_YELLOW
+    if bolid is None and zup_hours is not None:
+        return STATUS_PURPLE
     if fact_hours is None:
+        return STATUS_YELLOW
+
+    if zup_hours is None:
         return STATUS_YELLOW
 
     expected = zup_hours + LUNCH_HOURS

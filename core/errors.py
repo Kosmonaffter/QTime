@@ -74,12 +74,15 @@ def _humanize_os_error(error: OSError) -> str:
 
 def _humanize_value_error(error: ValueError) -> str:
     """
-    Разбирает ValueError: у нас это чаще всего отсутствие шапки.
+    Разбирает ValueError: отсутствие шапки или нарушение дней.
     """
-    text = str(error).lower()
-    if any(m in text for m in VALUE_ERROR_HEADER_MARKERS):
+    text = str(error)
+    if "дней месяца" in text:
+        return str(error)
+    text_low = text.lower()
+    if any(m in text_low for m in VALUE_ERROR_HEADER_MARKERS):
         return ERR_HEADER_NOT_FOUND
-    return ERR_UNKNOWN.format(details=str(error))
+    return ERR_UNKNOWN.format(details=text)
 
 
 def humanize_save_error(error: Exception) -> str:

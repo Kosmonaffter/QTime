@@ -38,13 +38,15 @@ from core.sk.constants import (
     SK_MSG_PROCESS_FIRST,
     SK_MSG_PROCESSED,
     SK_MSG_SAVED,
-    SK_MSG_ZUP_FIRST,
-    SK_MSG_ZUP_SELECTED,
+    SK_MSG_TABEL_FIRST,
+    SK_MSG_TABEL_SELECTED,
     SK_MONTH_LABEL,
     SK_OPEN_BOLID,
-    SK_OPEN_ZUP,
+    SK_OPEN_TABEL,
     SK_PROCESS,
     SK_SAVE,
+    SK_SHOW_FACT_LABEL,
+    SK_SHOW_TABEL_LABEL,
     SK_TAB_TREE_ROW_HEIGHT,
     SK_TOTAL_NEGATIVE,
     SK_TOTAL_OK,
@@ -54,10 +56,10 @@ from core.sk.sk_status import (
     day_diff_text,
     format_diff_hours,
     format_fact_total,
-    format_zup_total,
+    format_tabel_total,
 )
 from core.sk.sk_writer import write_sk
-from core.sk.zup_reader import read_zup
+from core.sk.tabel_reader import read_tabel
 from ui.dialogs.day_dialog import DayDialog
 from ui.sk_canvas import SkDayGrid, SkLegend
 
@@ -71,7 +73,7 @@ BOLID_FILETYPES = (
     ("CSV", "*.csv"),
     ("Все файлы", "*.*"),
 )
-ZUP_FILETYPES = (
+TABEL_FILETYPES = (
     ("Excel", "*.xls *.xlsx"),
     ("Все файлы", "*.*"),
 )
@@ -84,7 +86,7 @@ class SkTab(ttk.Frame):
         super().__init__(parent, padding=PANEL_PADDING)
 
         self.bolid_path = None
-        self.zup_path = None
+        self.tabel_path = None
         self.people = []
 
         default_month, default_year = _last_month()
@@ -94,6 +96,8 @@ class SkTab(ttk.Frame):
         self._year_var = tk.StringVar(value=str(default_year))
         self._filter_late_var = tk.BooleanVar(value=False)
         self._filter_over_var = tk.BooleanVar(value=False)
+        self._show_fact_var = tk.BooleanVar(value=True)
+        self._show_tabel_var = tk.BooleanVar(value=False)
 
         self._setup_tree_style()
         self._build_controls()
@@ -130,8 +134,8 @@ class SkTab(ttk.Frame):
 
         ttk.Button(
             panel,
-            text=SK_OPEN_ZUP,
-            command=self.choose_zup,
+            text=SK_OPEN_TABEL,
+            command=self.choose_tabel,
         ).pack(side="left", padx=PAD_XS)
 
         ttk.Label(panel, text=SK_MONTH_LABEL).pack(
@@ -185,6 +189,24 @@ class SkTab(ttk.Frame):
             command=self._apply_filters,
         ).pack(side="left", padx=PAD_XS)
 
+        ttk.Separator(filters, orient="vertical").pack(
+            side="left", fill="y", padx=PAD_M, pady=PAD_XS
+        )
+
+        ttk.Checkbutton(
+            filters,
+            text=SK_SHOW_FACT_LABEL,
+            variable=self._show_fact_var,
+            command=self._apply_filters,
+        ).pack(side="left", padx=PAD_XS)
+
+        ttk.Checkbutton(
+            filters,
+            text=SK_SHOW_TABEL_LABEL,
+            variable=self._show_tabel_var,
+            command=self._apply_filters,
+        ).pack(side="left", padx=PAD_XS)
+
         self._status = ttk.Label(
             self,
             text="",
@@ -227,9 +249,12 @@ class SkTab(ttk.Frame):
             self._summary.column(key, width=width, anchor="center")
 
         self._summary.tag_configure("ok", background=SK_DAY_COLORS["green"])
-        self._summary.tag_configure("bad", background=SK_DAY_COLORS["red"])
+        self._summary.tag_configure("late", background=SK_DAY_COLORS["red"])
+        self._summary.tag_configure("over", background=SK_DAY_COLORS["orange"])
         self._summary.tag_configure(
-            "zup_missing", background=SK_DAY_COLORS["yellow"])
+            "missing",
+            background=SK_DAY_COLORS["gray"]
+        )
 
         scrollbar = ttk.Scrollbar(
             frame, orient="vertical", command=self._summary.yview
@@ -273,17 +298,17 @@ class SkTab(ttk.Frame):
             foreground="black",
         )
 
-    def choose_zup(self):
-        """Открывает диалог выбора Табель."""
+    def choose_tabel(self):
+        """Открывает диалог выбора Табеля."""
         path = filedialog.askopenfilename(
-            title="Выберите файл Табель",
-            filetypes=ZUP_FILETYPES,
+            title="Выберите файл Табеля",
+            filetypes=TABEL_FILETYPES,
         )
         if not path:
             return
-        self.zup_path = path
+        self.tabel_path = path
         self._status.config(
-            text=SK_MSG_ZUP_SELECTED.format(name=Path(path).name),
+            text=SK_MSG_TABEL_SELECTED.format(name=Path(path).name),
             foreground="black",
         )
 
@@ -292,8 +317,8 @@ class SkTab(ttk.Frame):
         if not self.bolid_path:
             messagebox.showwarning(DLG_TITLE_WARNING, SK_MSG_BOLID_FIRST)
             return
-        if not self.zup_path:
-            messagebox.showwarning(DLG_TITLE_WARNING, SK_MSG_ZUP_FIRST)
+        if not self.tabel_path:
+            messagebox.showwarning(DLG_TITLE_WARNING, SK_MSG_TABEL_FIRST)
             return
 
         month, year = self._read_period()
@@ -302,7 +327,7 @@ class SkTab(ttk.Frame):
 
         try:
             bolid = read_bolid(self.bolid_path)
-            zup = read_zup(self.zup_path, month, year)
+            tabel = read_tabel(self.tabel_path, month, year)
         except Exception as error:
             messagebox.showerror(
                 DLG_TITLE_ERROR_READ,
@@ -310,11 +335,11 @@ class SkTab(ttk.Frame):
             )
             return
 
-        if not bolid and not zup:
+        if not bolid and not tabel:
             messagebox.showinfo(DLG_TITLE_WARNING, SK_MSG_NO_DATA)
             return
 
-        self.people = compare(bolid, zup, month, year)
+        self.people = compare(bolid, tabel, month, year)
         self._fill_summary()
         self._apply_filters()
 
@@ -381,7 +406,7 @@ class SkTab(ttk.Frame):
                 values=(
                     person["fio"],
                     format_fact_total(person["total_fact"]),
-                    format_zup_total(person["total_zup"]),
+                    format_tabel_total(person["total_zup"]),
                     diff_text,
                 ),
             )
@@ -390,15 +415,22 @@ class SkTab(ttk.Frame):
         """Заполняет Canvas-сетку дней с учётом фильтра."""
         visible = self._visible_people()
         month_days = self._current_month_days()
-        self._days.set_data(visible, month_days)
+        self._days.set_data(
+            visible,
+            month_days,
+            show_fact=self._show_fact_var.get(),
+            show_tabel=self._show_tabel_var.get(),
+        )
 
     # ---------- Обработчики ----------
 
     def _on_summary_select(self, _event):
-        """Клик по строке итогов — просто выбор (без прокрутки)."""
-        # Canvas не поддерживает selection_set/see для строк,
-        # поэтому просто оставляю выбор.
-        pass
+        """Клик по строке итогов — подсветить в сетке дней."""
+        selection = self._summary.selection()
+        if not selection:
+            return
+        fio = selection[0]
+        self._days.highlight_person(fio)
 
     def _on_day_click(self, row_index: int, day_index: int):
         """Клик по ячейке дня — открыть модалку с деталями."""
@@ -436,16 +468,23 @@ class SkTab(ttk.Frame):
         self._fill_days()
 
     def _visible_people(self):
-        """Возвращает людей, отфильтрованных по галкам."""
+        """
+        Возвращает людей, отфильтрованных по галкам.
+
+        Список отсортирован по ФИО.
+        """
         filters = []
         if self._filter_late_var.get():
             filters.extend(SK_FILTER_STATUSES_LATE)
         if self._filter_over_var.get():
             filters.extend(SK_FILTER_STATUSES_OVER)
 
-        if not filters:
-            return self.people
-        return [p for p in self.people if _has_status(p, filters)]
+        if filters:
+            people = [p for p in self.people if _has_status(p, filters)]
+        else:
+            people = list(self.people)
+
+        return sorted(people, key=_sort_key)
 
     def _current_month_days(self) -> int:
         """Число дней в выбранном месяце."""
@@ -457,6 +496,10 @@ class SkTab(ttk.Frame):
 
 
 # ---------- Хелперы ----------
+def _sort_key(person):
+    """Ключ для сортировки по ФИО."""
+    return person["fio"].lower().replace("ё", "е")
+
 
 def _last_month():
     """Возвращает (месяц, год) прошлого месяца."""
@@ -470,12 +513,20 @@ def _last_month():
 
 
 def _summary_tag(person) -> str:
-    """Тег строки итогов."""
+    """
+    Тег строки итогов.
+
+    ОК — зелёный, недоработка — красный,
+    переработка — оранжевый, нет данных — серый.
+    """
     if person["no_zup"] or person["no_bolid"]:
-        return "zup_missing"
+        return "missing"
     if person["total_ok"]:
         return "ok"
-    return "bad"
+    diff = person["total_fact"] - person["total_zup"]
+    if diff < 0:
+        return "late"
+    return "over"
 
 
 def _is_empty_day(day) -> bool:
