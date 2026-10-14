@@ -3,7 +3,7 @@
 
 Содержит Notebook с двумя вкладками: БЦ и СК.
 """
-
+import threading
 import tkinter as tk
 from tkinter import ttk
 
@@ -11,14 +11,17 @@ from core.constants import (
     APP_TITLE,
     TAB_BC_TITLE,
     TAB_SK_TITLE,
+    UPDATE_CHECK_DELAY_MS,
     WINDOW_ICON_FILE,
     WINDOW_SIZE,
 )
+from core import updater
 from ui.about_dialog import AboutDialog
 from ui.help_dialog import HelpDialog
 from ui.resource_utils import resource_path
 from ui.tabs.bc_tab import BcTab
 from ui.tabs.sk_tab import SkTab
+from ui.update_dialog import UpdateDialog
 
 
 class AppWindow(tk.Tk):
@@ -33,6 +36,27 @@ class AppWindow(tk.Tk):
         self._build_menu()
         self._build_notebook()
 
+        self.after(
+            UPDATE_CHECK_DELAY_MS,
+            self._check_for_updates,
+        )
+
+    def _check_for_updates(self):
+        """Проверяет обновления в фоне."""
+        thread = threading.Thread(
+            target=self._update_worker, daemon=True,
+        )
+        thread.start()
+
+    def _update_worker(self):
+        """Проверка в отдельном потоке."""
+        has_update, info = updater.check_for_update()
+        if has_update and info:
+            self.after(0, lambda: self._show_update_dialog(info))
+
+    def _show_update_dialog(self, info):
+        """Показывает окно обновления."""
+        UpdateDialog(self, info)
     # ---------- Иконка ----------
 
     def _set_window_icon(self):

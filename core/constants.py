@@ -11,6 +11,34 @@ WINDOW_SIZE = "1250x750"
 WINDOW_ICON_FILE = "assets/qtime_icon.ico"
 LOGO_FILE = "assets/logo.png"
 
+# ---------- Версия приложения ----------
+APP_VERSION = "1.3.0"
+UPDATE_URL = (
+    "https://raw.githubusercontent.com/"
+    "Kosmonaffter/QTime/main/docs/version.json"
+)
+UPDATE_CHECK_DELAY_MS = 2000       # задержка перед проверкой (мс)
+UPDATE_TIMEOUT_SECONDS = 10        # таймаут сетевых запросов
+
+# ---------- Тексты окна обновления ----------
+UPDATE_DIALOG_TITLE = "Обновление QTime"
+UPDATE_HEADER = "Доступна новая версия"
+UPDATE_VERSION_TEMPLATE = "Текущая версия: {current}\nНовая версия: {latest}"
+UPDATE_NOTES_LABEL = "Что нового:"
+UPDATE_BUTTON_UPDATE = "Обновить сейчас"
+UPDATE_BUTTON_LATER = "Позже"
+UPDATE_BUTTON_OPEN = "Открыть страницу релиза"
+UPDATE_DOWNLOADING = "Скачивание обновления…"
+UPDATE_INSTALLING = "Установка обновления…"
+UPDATE_ERROR = "Не удалось скачать обновление:\n{error}"
+UPDATE_UP_TO_DATE = "У вас последняя версия QTime."
+
+# ---------- Временные файлы ----------
+UPDATE_TMP_PREFIX = "qtime_update_"
+UPDATE_SCRIPT_PREFIX = "qtime_update_"
+UPDATE_SCRIPT_EXT = ".bat"
+UPDATE_EXE_NAME = "QTime.exe"
+
 # ---------- Вкладки ----------
 TAB_BC_TITLE = "БЦ"
 TAB_SK_TITLE = "СК"
