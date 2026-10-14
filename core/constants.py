@@ -13,31 +13,34 @@ LOGO_FILE = "assets/logo.png"
 
 # ---------- Версия приложения ----------
 APP_VERSION = "1.3.0"
-UPDATE_URL = (
+VERSION_CHECK_URL = (
     "https://raw.githubusercontent.com/"
     "Kosmonaffter/QTime/main/docs/version.json"
 )
-UPDATE_CHECK_DELAY_MS = 2000       # задержка перед проверкой (мс)
-UPDATE_TIMEOUT_SECONDS = 10        # таймаут сетевых запросов
+VERSION_CHECK_DELAY_MS = 2000        # задержка перед проверкой (мс)
+VERSION_CHECK_TIMEOUT = 10           # таймаут сетевого запроса (сек)
+VERSION_RELEASES_URL = (
+    "https://github.com/Kosmonaffter/QTime/releases/latest"
+)
 
-# ---------- Тексты окна обновления ----------
-UPDATE_DIALOG_TITLE = "Обновление QTime"
-UPDATE_HEADER = "Доступна новая версия"
-UPDATE_VERSION_TEMPLATE = "Текущая версия: {current}\nНовая версия: {latest}"
-UPDATE_NOTES_LABEL = "Что нового:"
-UPDATE_BUTTON_UPDATE = "Обновить сейчас"
-UPDATE_BUTTON_LATER = "Позже"
+# ---------- Тексты для индикатора версии ----------
+VERSION_LABEL_TEMPLATE = "Версия: {version}"
+VERSION_NEW_TEMPLATE = "Вышла новая версия {version}"
+VERSION_BUTTON_TEXT = "!"
+
+# ---------- Окно «Новая версия» ----------
+UPDATE_DIALOG_TITLE = "Новая версия QTime"
+UPDATE_HEADER = "Вышла новая версия {version}"
+UPDATE_CURRENT = "У вас установлена: {version}"
+UPDATE_INSTRUCTION = (
+    "Как обновить:\n\n"
+    "1. Нажмите «Открыть страницу релиза».\n"
+    "2. Скачайте файл QTime.exe.\n"
+    "3. Замените старый QTime.exe новым.\n"
+    "4. Запустите QTime заново."
+)
 UPDATE_BUTTON_OPEN = "Открыть страницу релиза"
-UPDATE_DOWNLOADING = "Скачивание обновления…"
-UPDATE_INSTALLING = "Установка обновления…"
-UPDATE_ERROR = "Не удалось скачать обновление:\n{error}"
-UPDATE_UP_TO_DATE = "У вас последняя версия QTime."
-
-# ---------- Временные файлы ----------
-UPDATE_TMP_PREFIX = "qtime_update_"
-UPDATE_SCRIPT_PREFIX = "qtime_update_"
-UPDATE_SCRIPT_EXT = ".bat"
-UPDATE_EXE_NAME = "QTime.exe"
+UPDATE_BUTTON_LATER = "Позже"
 
 # ---------- Вкладки ----------
 TAB_BC_TITLE = "БЦ"

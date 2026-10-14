@@ -190,10 +190,14 @@ python main.py
 ## Сборка EXE
 
 ### Вариант 1 — один файл (`--onefile`)
+```bash
+# Удалить старое
 
+rm -rf build dist QTime.spec
+```
 ```bash
 pip install pyinstaller
-pyinstaller --noconfirm --clean QTime.spec
+pyinstaller --noconfirm --clean --onefile --windowed --name QTime --icon assets/qtime.ico --add-data "assets;assets" --hidden-import "babel.numbers" main.py
 ```
 
 Готовый файл: `dist/QTime.exe`.

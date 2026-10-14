@@ -3,25 +3,29 @@
 
 Содержит Notebook с двумя вкладками: БЦ и СК.
 """
-import threading
 import tkinter as tk
 from tkinter import ttk
+import threading
 
 from core.constants import (
     APP_TITLE,
+    APP_VERSION,
     TAB_BC_TITLE,
     TAB_SK_TITLE,
-    UPDATE_CHECK_DELAY_MS,
+    VERSION_CHECK_DELAY_MS,
+    VERSION_LABEL_TEMPLATE,
+    VERSION_NEW_TEMPLATE,
     WINDOW_ICON_FILE,
     WINDOW_SIZE,
 )
-from core import updater
+from core.version_check import check_for_update
 from ui.about_dialog import AboutDialog
 from ui.help_dialog import HelpDialog
 from ui.resource_utils import resource_path
 from ui.tabs.bc_tab import BcTab
 from ui.tabs.sk_tab import SkTab
-from ui.update_dialog import UpdateDialog
+from ui.update_dialog import UpdateInfoDialog
+from ui.version_indicator import VersionIndicator
 
 
 class AppWindow(tk.Tk):
@@ -33,30 +37,16 @@ class AppWindow(tk.Tk):
         self.geometry(WINDOW_SIZE)
         self._set_window_icon()
 
+        self._latest_version = None
+
         self._build_menu()
         self._build_notebook()
+        self._build_status_bar()
 
         self.after(
-            UPDATE_CHECK_DELAY_MS,
-            self._check_for_updates,
+            VERSION_CHECK_DELAY_MS,
+            self._start_version_check,
         )
-
-    def _check_for_updates(self):
-        """Проверяет обновления в фоне."""
-        thread = threading.Thread(
-            target=self._update_worker, daemon=True,
-        )
-        thread.start()
-
-    def _update_worker(self):
-        """Проверка в отдельном потоке."""
-        has_update, info = updater.check_for_update()
-        if has_update and info:
-            self.after(0, lambda: self._show_update_dialog(info))
-
-    def _show_update_dialog(self, info):
-        """Показывает окно обновления."""
-        UpdateDialog(self, info)
     # ---------- Иконка ----------
 
     def _set_window_icon(self):
@@ -105,6 +95,49 @@ class AppWindow(tk.Tk):
         notebook.add(self._sk_tab, text=TAB_SK_TITLE)
 
     # ---------- Диалоги ----------
+    def _build_status_bar(self):
+        """Создаёт нижнюю строку с версией и индикатором."""
+        self._status_bar = ttk.Frame(self)
+        self._status_bar.pack(fill="x", side="bottom")
+
+        self._version_label = ttk.Label(
+            self._status_bar,
+            text=VERSION_LABEL_TEMPLATE.format(version=APP_VERSION),
+            foreground="#777777",
+            font=("Segoe UI", 9),
+        )
+        self._version_label.pack(side="left", padx=8, pady=4)
+
+        self._indicator = VersionIndicator(
+            self._status_bar,
+            on_click=self._show_update_dialog,
+        )
+        self._indicator.hide()
+
+    def _start_version_check(self):
+        """Запускает проверку версии в фоне."""
+        thread = threading.Thread(
+            target=self._version_check_worker,
+            daemon=True,
+        )
+        thread.start()
+
+    def _version_check_worker(self):
+        """Проверка в отдельном потоке."""
+        has_update, latest = check_for_update()
+        if has_update and latest:
+            self.after(0, lambda: self._on_update_found(latest))
+
+    def _on_update_found(self, latest: str):
+        """Показывает индикатор новой версии."""
+        self._latest_version = latest
+        tooltip = VERSION_NEW_TEMPLATE.format(version=latest)
+        self._indicator.show(tooltip)
+
+    def _show_update_dialog(self):
+        """Открывает окно информации о новой версии."""
+        if self._latest_version:
+            UpdateInfoDialog(self, self._latest_version)
 
     def show_about(self):
         """Открывает окно «О программе»."""

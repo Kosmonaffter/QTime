@@ -3,6 +3,7 @@
 from PyInstaller.utils.hooks import collect_data_files
 
 datas = collect_data_files("tkcalendar")
+datas += collect_data_files("babel")
 datas += [("assets", "assets")]
 
 a = Analysis(
@@ -30,9 +31,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,

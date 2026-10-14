@@ -1,40 +1,37 @@
 """
-Модальное окно обновления QTime.
+Информационное окно «Вышла новая версия».
 
-Показывает новую версию и кнопки Обновить / Позже.
+Не скачивает обновление. Показывает инструкцию и кнопку
+для открытия страницы релиза в браузере.
 """
 
-import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+import webbrowser
+from tkinter import ttk
 
-from core import updater
 from core.constants import (
+    APP_VERSION,
     UPDATE_BUTTON_LATER,
     UPDATE_BUTTON_OPEN,
-    UPDATE_BUTTON_UPDATE,
+    UPDATE_CURRENT,
     UPDATE_DIALOG_TITLE,
-    UPDATE_DOWNLOADING,
-    UPDATE_ERROR,
     UPDATE_HEADER,
-    UPDATE_NOTES_LABEL,
-    UPDATE_VERSION_TEMPLATE,
+    UPDATE_INSTRUCTION,
+    VERSION_RELEASES_URL,
 )
 
 
-class UpdateDialog(tk.Toplevel):
-    """Модальное окно предложения обновиться."""
+class UpdateInfoDialog(tk.Toplevel):
+    """Модальное окно с информацией о новой версии."""
 
-    def __init__(self, parent, info: dict):
+    def __init__(self, parent, latest_version: str):
         super().__init__(parent)
         self.title(UPDATE_DIALOG_TITLE)
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
 
-        self._info = info
-        self._can_install = updater.can_install_update()
-
+        self._latest = latest_version
         self._build_ui()
         self._center_on_parent(parent)
 
@@ -45,31 +42,25 @@ class UpdateDialog(tk.Toplevel):
 
         ttk.Label(
             frame,
-            text=UPDATE_HEADER,
-            font=("Segoe UI", 12, "bold"),
+            text=UPDATE_HEADER.format(version=self._latest),
+            font=("Segoe UI", 13, "bold"),
         ).pack(anchor="w", pady=(0, 8))
 
-        version_text = UPDATE_VERSION_TEMPLATE.format(
-            current=updater.APP_VERSION,
-            latest=self._info.get("version", "?"),
-        )
-        ttk.Label(frame, text=version_text).pack(anchor="w", pady=(0, 8))
+        ttk.Label(
+            frame,
+            text=UPDATE_CURRENT.format(version=APP_VERSION),
+            font=("Segoe UI", 10),
+        ).pack(anchor="w", pady=(0, 12))
 
-        notes_url = self._info.get("release_notes", "")
-        if notes_url:
-            ttk.Label(
-                frame, text=UPDATE_NOTES_LABEL, font=("Segoe UI", 10, "bold"),
-            ).pack(anchor="w", pady=(8, 4))
+        ttk.Label(
+            frame,
+            text=UPDATE_INSTRUCTION,
+            justify="left",
+            font=("Segoe UI", 10),
+        ).pack(anchor="w", pady=(0, 16))
 
-            link = ttk.Label(
-                frame, text=notes_url,
-                foreground="#2E7DD1", cursor="hand2",
-            )
-            link.pack(anchor="w")
-            link.bind("<Button-1>", lambda _e: _open_url(notes_url))
-
-        buttons = ttk.Frame(frame, padding=(0, 16, 0, 0))
-        buttons.pack(fill="x")
+        buttons = ttk.Frame(frame)
+        buttons.pack(fill="x", pady=(8, 0))
 
         ttk.Button(
             buttons,
@@ -77,46 +68,15 @@ class UpdateDialog(tk.Toplevel):
             command=self.destroy,
         ).pack(side="right", padx=(8, 0))
 
-        if self._can_install:
-            ttk.Button(
-                buttons,
-                text=UPDATE_BUTTON_UPDATE,
-                command=self._start_update,
-            ).pack(side="right")
+        ttk.Button(
+            buttons,
+            text=UPDATE_BUTTON_OPEN,
+            command=self._open_release_page,
+        ).pack(side="right")
 
-        self._status = ttk.Label(frame, text="", foreground="#555555")
-        self._status.pack(anchor="w", pady=(8, 0))
-
-    def _start_update(self):
-        """Запускает скачивание в отдельном потоке."""
-        self._status.config(text=UPDATE_DOWNLOADING)
-        thread = threading.Thread(target=self._download_worker, daemon=True)
-        thread.start()
-
-    def _download_worker(self):
-        """Скачивает и устанавливает обновление."""
-        try:
-            url = self._info.get("download_url", "")
-            if not url:
-                raise RuntimeError("Нет ссылки для скачивания")
-            updater.download_and_install(url)
-        except Exception as error:
-            self.after(0, lambda: self._show_error(str(error)))
-            return
-        self.after(0, self._restart)
-
-    def _show_error(self, text: str):
-        """Показывает ошибку."""
-        self._status.config(text="")
-        messagebox.showerror(
-            UPDATE_DIALOG_TITLE,
-            UPDATE_ERROR.format(error=text),
-        )
-
-    def _restart(self):
-        """Закрывает приложение — .bat подхватит."""
-        self.destroy()
-        updater.restart_application()
+    def _open_release_page(self):
+        """Открывает страницу релиза в браузере."""
+        webbrowser.open(VERSION_RELEASES_URL)
 
     def _center_on_parent(self, parent):
         """Центрирует окно."""
@@ -126,9 +86,3 @@ class UpdateDialog(tk.Toplevel):
         x = parent.winfo_rootx() + (parent.winfo_width() - w) // 2
         y = parent.winfo_rooty() + (parent.winfo_height() - h) // 2
         self.geometry(f"+{x}+{y}")
-
-
-def _open_url(url: str):
-    """Открывает URL в браузере."""
-    import webbrowser
-    webbrowser.open(url)
