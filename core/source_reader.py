@@ -2,10 +2,13 @@
 Чтение Файла 1 «Отработанное время за месяц».
 
 Шапка ищется по маркеру (HEADER_MARKER), а не по жёстким координатам.
-Это позволяет работать с файлами, где данные начинаются
-не со 2-й строки и не с колонки B.
+
+Поддерживает два режима:
+- WEEK_MODE: 7 колонок, начиная с выбранной даты (пн).
+- MONTH_MODE: все дни месяца (1..N), N — по календарю.
 """
 
+import calendar
 from datetime import date, timedelta
 
 from openpyxl import load_workbook
@@ -15,16 +18,24 @@ from core.constants import (
     HEADER_MARKER,
     HEADER_SEARCH_LIMIT,
     MAX_DAYS,
+    MONTH_MODE,
     RESPONSIBLE_PREFIX,
+    WEEK_MODE,
 )
 from core.time_utils import parse_cell
 
 
-def read_source(path: str, start_date: date):
+DATE_MISMATCH_PREFIX = "_DATE_MISMATCH__"
+
+
+def read_source(path: str, start_date: date, mode: str = WEEK_MODE,
+                month: int = 0, year: int = 0):
     """
     Читает файл «Отработанное время за месяц».
 
-    start_date — дата первой колонки с данными (обычно понедельник).
+    Режимы:
+    - WEEK_MODE: 7 колонок, начиная с start_date.
+    - MONTH_MODE: все дни месяца, начиная с 1-го числа.
 
     Возвращает список словарей:
     [
@@ -34,6 +45,9 @@ def read_source(path: str, start_date: date):
         },
         ...
     ]
+
+    Если в WEEK_MODE первая дата в файле не совпадает с start_date —
+    бросает ValueError с префиксом DATE_MISMATCH_PREFIX.
     """
     workbook = load_workbook(path, data_only=True)
     sheet = workbook.active
@@ -41,16 +55,50 @@ def read_source(path: str, start_date: date):
         raise ValueError("В файле нет активного листа")
 
     layout = _find_layout(sheet)
-    days_count = _count_days(sheet, layout)
-    dates = _build_dates(start_date, days_count)
+    column_index = _find_day_column(sheet, layout, start_date.day)
 
-    people = _read_people(sheet, layout, dates)
+    if mode == WEEK_MODE:
+        if column_index is None:
+            # Выбранной даты нет в файле — модалка
+            first_day_number = _first_day_number(sheet, layout)
+            raise ValueError(
+                f"{DATE_MISMATCH_PREFIX}"
+                f"|{first_day_number:02d}"
+                f"|{start_date.day:02d}"
+            )
+        days_count = 7
+    else:
+        total = calendar.monthrange(year, month)[1]
+        days_count = min(total, MAX_DAYS)
+        start_date = date(year, month, 1)
+        column_index = 0
+
+    dates = _build_dates(start_date, days_count)
+    people = _read_people(sheet, layout, dates, column_index)
 
     workbook.close()
     return people
 
 
+def _find_day_column(sheet, layout, day_number: int):
+    """
+    Ищет колонку с указанным днём в шапке.
+
+    Возвращает индекс (0-based) или None, если не найдено.
+    """
+    header_row = layout["header_row"]
+    first_col = layout["first_day_col"]
+    last_col = sheet.max_column
+
+    for offset, col in enumerate(range(first_col, last_col + 1)):
+        raw = sheet.cell(row=header_row, column=col).value
+        number = _parse_day_number(raw)
+        if number == day_number:
+            return offset
+    return None
+
 # ---------- Поиск шапки ----------
+
 
 def _find_layout(sheet):
     """
@@ -58,13 +106,11 @@ def _find_layout(sheet):
 
     Возвращает словарь:
     {
-        'header_row': 7,       # строка с заголовком
-        'first_data_row': 8,   # первая строка с ФИО
-        'fio_col': 2,          # колонка с ФИО (B)
-        'first_day_col': 3,    # первая колонка с датами (C)
+        'header_row': 7,
+        'first_data_row': 8,
+        'fio_col': 2,
+        'first_day_col': 3,
     }
-
-    Если шапка не найдена — выбрасывает ValueError.
     """
     for row in range(1, HEADER_SEARCH_LIMIT + 1):
         fio_col = _find_marker_column(sheet, row)
@@ -83,11 +129,7 @@ def _find_layout(sheet):
 
 
 def _find_marker_column(sheet, row: int):
-    """
-    Ищет колонку с маркером HEADER_MARKER в указанной строке.
-
-    Возвращает номер колонки или None.
-    """
+    """Ищет колонку с маркером HEADER_MARKER в строке."""
     for col in range(1, HEADER_COLUMN_LIMIT + 1):
         value = sheet.cell(row=row, column=col).value
         if _is_header_cell(value):
@@ -96,52 +138,48 @@ def _find_marker_column(sheet, row: int):
 
 
 def _is_header_cell(value) -> bool:
-    """
-    Проверяет, что значение похоже на заголовок с маркером.
-
-    Регистр не важен, лишние пробелы игнорируются.
-    """
+    """Проверяет, что значение похоже на заголовок с маркером."""
     if value is None:
         return False
     text = str(value).strip().lower()
     return HEADER_MARKER in text
 
 
-# ---------- Подсчёт дней ----------
+# ---------- Первая дата в файле ----------
 
-def _count_days(sheet, layout) -> int:
+def _first_day_number(sheet, layout):
     """
-    Считает, сколько колонок с днями реально заполнено.
+    Возвращает число месяца из первой колонки с датами.
 
-    Идём от first_day_col до конца, ищем последнюю заполненную.
-    Ограничение — MAX_DAYS. Пустые колонки в конце отбрасываются.
+    Берёт значение из шапки, пытается извлечь число
+    (например, '19' или '19\\nпн').
     """
-    first = layout["first_day_col"]
-    last_filled = first - 1
-
-    for col in range(first, sheet.max_column + 1):
-        if _column_has_data(sheet, col, layout):
-            last_filled = col
-
-    days = last_filled - first + 1
-    if days < 0:
-        days = 0
-    return min(days, MAX_DAYS)
+    first_col = layout["first_day_col"]
+    header_row = layout["header_row"]
+    raw = sheet.cell(row=header_row, column=first_col).value
+    return _parse_day_number(raw)
 
 
-def _column_has_data(sheet, column: int, layout) -> bool:
+def _parse_day_number(value):
     """
-    Проверяет, есть ли в колонке хотя бы одно непустое значение.
+    Извлекает число месяца из значения шапки.
 
-    Смотрим только строки с данными (ниже шапки).
+    '19' → 19, '19\\nпн' → 19, '19 пн' → 19.
     """
-    start = layout["first_data_row"]
-    for row in range(start, sheet.max_row + 1):
-        value = sheet.cell(row=row, column=column).value
-        if value not in (None, "", "-", "?", "—"):
-            return True
-    return False
+    if value is None:
+        return None
+    text = str(value).strip()
+    first_token = text.split("\n")[0].strip().split(" ")[0].strip()
+    try:
+        number = int(first_token)
+    except ValueError:
+        return None
+    if 1 <= number <= 31:
+        return number
+    return None
 
+
+# ---------- Построение дат ----------
 
 def _build_dates(start_date: date, count: int):
     """Строит список последовательных дат от start_date."""
@@ -150,7 +188,7 @@ def _build_dates(start_date: date, count: int):
 
 # ---------- Чтение людей ----------
 
-def _read_people(sheet, layout, dates):
+def _read_people(sheet, layout, dates, column_index: int = 0):
     """Читает всех сотрудников, начиная со строки данных."""
     people = []
     row = layout["first_data_row"]
@@ -163,7 +201,7 @@ def _read_people(sheet, layout, dates):
         if fio.lower().startswith(RESPONSIBLE_PREFIX):
             break
 
-        days = _read_days(sheet, row, layout, dates)
+        days = _read_days(sheet, row, layout, dates, column_index)
         people.append({"fio": fio, "days": days})
         row += 1
 
@@ -171,11 +209,7 @@ def _read_people(sheet, layout, dates):
 
 
 def _read_fio(sheet, row: int, layout):
-    """
-    Возвращает ФИО из строки или None, если строка пустая.
-
-    Колонка ФИО берётся из layout.
-    """
+    """Возвращает ФИО из строки или None."""
     raw = sheet.cell(row=row, column=layout["fio_col"]).value
     if raw is None:
         return None
@@ -183,10 +217,10 @@ def _read_fio(sheet, row: int, layout):
     return text or None
 
 
-def _read_days(sheet, row: int, layout, dates):
+def _read_days(sheet, row: int, layout, dates, column_index: int = 0):
     """Собирает данные по каждому дню для одного человека."""
     days = []
-    first = layout["first_day_col"]
+    first = layout["first_day_col"] + column_index
 
     for index, day_date in enumerate(dates):
         column = first + index

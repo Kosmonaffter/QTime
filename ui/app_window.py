@@ -20,7 +20,7 @@ from core.constants import (
 )
 from core.version_check import check_for_update
 from ui.about_dialog import AboutDialog
-from ui.help_dialog import HelpDialog
+from ui.dialogs.help_dialog import HelpDialog
 from ui.resource_utils import resource_path
 from ui.tabs.bc_tab import BcTab
 from ui.tabs.sk_tab import SkTab

@@ -26,6 +26,8 @@ from core.constants import (
     DEFAULT_DAY_MIN,
     DEFAULT_MONTH_MAX,
     DEFAULT_MONTH_MIN,
+    DEFAULT_START_TIME,
+    DEFAULT_WORK_HOURS,
     DEFAULT_YEAR_MAX,
     DEFAULT_YEAR_MIN,
     DIALOG_DEFAULT_FILENAME,
@@ -39,6 +41,11 @@ from core.constants import (
     ERR_OLD_FORMAT,
     EXCEL_FILETYPES,
     EXCEL_FILETYPES_SAVE,
+    MODE_LABEL_WEEK,
+    MODE_LABEL_MONTH,
+    MONTH_MODE,
+    MONTH_YEAR_LABEL_MONTH,
+    MONTH_YEAR_LABEL_YEAR,
     MSG_CANCELLED,
     MSG_FILE_NOT_SELECTED,
     MSG_INVALID_START_DATE,
@@ -54,6 +61,7 @@ from core.constants import (
     PAD_XS,
     PANEL_PADDING,
     SCHEDULE_CHECK_LABEL,
+    SCHEDULE_CHECK_TOOLTIP,
     SEPARATOR_ROW_COLOR,
     SEPARATOR_ROW_HEIGHT,
     SPINBOX_DAY_WIDTH,
@@ -67,13 +75,16 @@ from core.constants import (
     TREE_ROW_HEIGHT,
     TREE_SELECTED_BG,
     TREE_SELECTED_FG,
+    WEEK_MODE,
 )
 from core.errors import humanize_error, humanize_save_error
-from core.schedule import empty_evaluation, evaluate_day
-from core.source_reader import read_source
+from core.schedule import empty_evaluation, evaluate_day, Schedule
+from core.source_reader import read_source, DATE_MISMATCH_PREFIX
 from core.target_writer import write_target
 from core.time_utils import calc_total
+from ui.dialogs.date_mismatch_dialog import DateMismatchDialog
 from ui.schedule_dialog import ScheduleDialog
+from ui.tooltip import Tooltip
 
 
 class BcTab(ttk.Frame):
@@ -87,7 +98,10 @@ class BcTab(ttk.Frame):
         self.schedules = {}
         self._use_schedule_var = tk.BooleanVar(value=False)
         self._use_calendar_var = tk.BooleanVar(value=True)
-
+        self._mode_var = tk.StringVar(value=WEEK_MODE)
+        today = date.today()
+        self._month_var = tk.StringVar(value=str(today.month))
+        self._month_year_var = tk.StringVar(value=str(today.year))
         self._setup_tree_style()
         self._build_controls()
         self._build_preview()
@@ -118,7 +132,7 @@ class BcTab(ttk.Frame):
     # ---------- Построение интерфейса ----------
 
     def _build_controls(self):
-        """Создаёт верхнюю панель: файл, дата, кнопки."""
+        """Создаёт верхнюю панель: файл, режим, дата, кнопки."""
         panel = ttk.Frame(self, padding=PANEL_PADDING)
         panel.pack(fill="x")
 
@@ -128,9 +142,21 @@ class BcTab(ttk.Frame):
             command=self.choose_source,
         ).pack(side="left", padx=PAD_XS)
 
-        ttk.Label(panel, text="Начало недели (пн):").pack(
-            side="left", padx=(PAD_L, PAD_XS)
-        )
+        ttk.Radiobutton(
+            panel,
+            text=MODE_LABEL_WEEK,
+            variable=self._mode_var,
+            value=WEEK_MODE,
+            command=self._toggle_mode,
+        ).pack(side="left", padx=(PAD_L, PAD_XS))
+
+        ttk.Radiobutton(
+            panel,
+            text=MODE_LABEL_MONTH,
+            variable=self._mode_var,
+            value=MONTH_MODE,
+            command=self._toggle_mode,
+        ).pack(side="left", padx=PAD_XS)
 
         default_monday = _last_monday()
 
@@ -143,7 +169,9 @@ class BcTab(ttk.Frame):
 
         self._manual_frame = ttk.Frame(panel)
         self._year_var = tk.StringVar(value=str(default_monday.year))
-        self._month_var = tk.StringVar(value=f"{default_monday.month:02d}")
+        self._manual_month_var = tk.StringVar(
+            value=f"{default_monday.month:02d}"
+        )
         self._day_var = tk.StringVar(value=f"{default_monday.day:02d}")
 
         self._build_manual_inputs()
@@ -157,11 +185,31 @@ class BcTab(ttk.Frame):
 
         self._date_entry.pack(side="left")
 
-        ttk.Checkbutton(
+        self._month_frame = ttk.Frame(panel)
+        ttk.Label(
+            self._month_frame, text=MONTH_YEAR_LABEL_MONTH
+        ).pack(side="left")
+        ttk.Spinbox(
+            self._month_frame,
+            from_=1, to=12, width=4,
+            textvariable=self._month_var,
+        ).pack(side="left", padx=PAD_XS)
+        ttk.Label(
+            self._month_frame, text=MONTH_YEAR_LABEL_YEAR
+        ).pack(side="left")
+        ttk.Spinbox(
+            self._month_frame,
+            from_=2020, to=2100, width=6,
+            textvariable=self._month_year_var,
+        ).pack(side="left", padx=PAD_XS)
+
+        self._schedule_cb = ttk.Checkbutton(
             panel,
-            text=SCHEDULE_CHECK_LABEL,
+            text=f"{SCHEDULE_CHECK_LABEL} ?",
             variable=self._use_schedule_var,
-        ).pack(side="left", padx=(PAD_M, 0))
+        )
+        self._schedule_cb.pack(side="left", padx=(PAD_M, 0))
+        Tooltip(self._schedule_cb, SCHEDULE_CHECK_TOOLTIP)
 
         ttk.Button(
             panel,
@@ -182,6 +230,21 @@ class BcTab(ttk.Frame):
         )
         self._status.pack(fill="x", padx=PAD_S, pady=(PAD_XS, 0))
 
+    def _toggle_mode(self):
+        """Переключает отображение: неделя или месяц."""
+        is_week = self._mode_var.get() == WEEK_MODE
+
+        if is_week:
+            self._month_frame.pack_forget()
+            if self._use_calendar_var.get():
+                self._date_entry.pack(side="left")
+            else:
+                self._manual_frame.pack(side="left")
+        else:
+            self._date_entry.pack_forget()
+            self._manual_frame.pack_forget()
+            self._month_frame.pack(side="left")
+
     def _build_manual_inputs(self):
         """Создаёт три поля ручного ввода даты."""
         ttk.Spinbox(
@@ -197,7 +260,7 @@ class BcTab(ttk.Frame):
             from_=DEFAULT_MONTH_MIN,
             to=DEFAULT_MONTH_MAX,
             width=SPINBOX_MONTH_WIDTH,
-            textvariable=self._month_var,
+            textvariable=self._manual_month_var,
         ).pack(side="left")
         ttk.Label(self._manual_frame, text="-").pack(side="left")
         ttk.Spinbox(
@@ -260,6 +323,8 @@ class BcTab(ttk.Frame):
 
     def _toggle_date_mode(self):
         """Переключает между календарём и ручными полями."""
+        if self._mode_var.get() == MONTH_MODE:
+            return
         if self._use_calendar_var.get():
             self._manual_frame.pack_forget()
             self._date_entry.pack(side="left")
@@ -290,9 +355,18 @@ class BcTab(ttk.Frame):
             )
             return
 
-        start_date = self._read_start_date()
-        if start_date is None:
-            return
+        mode = self._mode_var.get()
+        if mode == WEEK_MODE:
+            start_date = self._read_start_date()
+            if start_date is None:
+                return
+            month = start_date.month
+            year = start_date.year
+        else:
+            month, year = self._read_month_year()
+            if month is None or year is None:
+                return
+            start_date = date(year, month, 1)
 
         if self._is_old_format():
             messagebox.showerror(
@@ -302,7 +376,16 @@ class BcTab(ttk.Frame):
             return
 
         try:
-            self.people = read_source(self.source_path, start_date)
+            self.people = read_source(
+                self.source_path,
+                start_date,
+                mode=mode,
+                month=month,
+                year=year,
+            )
+        except ValueError as error:
+            self._handle_read_error(error, start_date, mode, month, year)
+            return
         except Exception as error:
             messagebox.showerror(
                 DLG_TITLE_ERROR_READ,
@@ -327,6 +410,69 @@ class BcTab(ttk.Frame):
             foreground=STATUS_FG_OK,
         )
 
+    def _read_month_year(self):
+        """Возвращает (месяц, год) или (None, None)."""
+        try:
+            month = int(self._month_var.get())
+            year = int(self._month_year_var.get())
+        except ValueError:
+            messagebox.showerror(
+                DLG_TITLE_ERROR_DATE,
+                MSG_INVALID_START_DATE,
+            )
+            return None, None
+        return month, year
+
+    def _handle_read_error(self, error, start_date, mode, month, year):
+        """Обрабатывает ошибки чтения, включая несовпадение дат."""
+        assert self.source_path is not None
+        assert month is not None
+        assert year is not None
+        text = str(error)
+        if not text.startswith(DATE_MISMATCH_PREFIX):
+            messagebox.showerror(
+                DLG_TITLE_ERROR_READ,
+                humanize_error(error),
+            )
+            return
+
+        parts = text.split("|")
+        file_day = parts[1] if len(parts) > 1 else ""
+        selected_day = parts[2] if len(parts) > 2 else start_date.day
+
+        dialog = DateMismatchDialog(
+            self,
+            file_day=f"{file_day}.{month:02d}.{year}",
+            selected_day=f"{selected_day}.{month:02d}.{year}",
+        )
+        self.wait_window(dialog)
+
+        if dialog.result is None:
+            return
+
+        if dialog.result == "file":
+            new_start = date(year, month, int(file_day))
+        else:
+            new_start = start_date
+
+        if not self.source_path:
+            return
+
+        try:
+            self.people = read_source(
+                self.source_path,
+                new_start,
+                mode=mode,
+                month=month,
+                year=year,
+            )
+        except Exception as err:
+            messagebox.showerror(
+                DLG_TITLE_ERROR_READ,
+                humanize_error(err),
+            )
+            return
+
     def save(self):
         """Сохраняет итоговый УРВ в выбранный файл."""
         if not self.people:
@@ -345,8 +491,13 @@ class BcTab(ttk.Frame):
         if not path:
             return
 
+        schedules_for_excel = (
+            self.schedules
+            if self._use_schedule_var.get()
+            else {}
+        )
         try:
-            write_target(self.people, self.schedules, path)
+            write_target(self.people, schedules_for_excel, path)
         except Exception as error:
             messagebox.showerror(
                 DLG_TITLE_ERROR_SAVE,
@@ -368,7 +519,7 @@ class BcTab(ttk.Frame):
         try:
             return date(
                 int(self._year_var.get()),
-                int(self._month_var.get()),
+                int(self._manual_month_var.get()),
                 int(self._day_var.get()),
             )
         except ValueError:
@@ -397,7 +548,7 @@ class BcTab(ttk.Frame):
 
     def _fill_preview(self):
         """Заполняет таблицу, окрашивая статусы и блоки."""
-        schedules = self.schedules or {}
+        schedules = self._effective_schedules()
 
         for item in self._tree.get_children():
             self._tree.delete(item)
@@ -432,6 +583,23 @@ class BcTab(ttk.Frame):
                 tags=("separator",),
                 values=("",) * OUT_COL_COUNT,
             )
+
+    def _effective_schedules(self):
+        """
+        Возвращает словарь графиков для предпросмотра.
+
+        Если галочка не стоит — используем дефолтные графики
+        для всех сотрудников (09:00, 9 часов).
+        """
+        if self.schedules:
+            return self.schedules
+        default = Schedule(
+            start_time=DEFAULT_START_TIME,
+            hours=DEFAULT_WORK_HOURS,
+        )
+        return {
+            person["fio"]: default for person in self.people
+        }
 
     def _insert_day_row(self, fio, day, schedule, base_tag, is_first):
         """Вставляет одну строку дня с оценкой по графику."""
