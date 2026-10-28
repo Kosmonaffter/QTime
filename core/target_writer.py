@@ -39,15 +39,13 @@ from core.schedule import evaluate_day
 from core.time_utils import calc_total
 
 
-HEADER_COUNT = 4    # ФИО, приход, уход, итого
-
-
 def write_target(people, schedules, out_path: str):
     """
     Сохраняет итоговый УРВ.
 
     people — список сотрудников с днями.
     schedules — словарь {ФИО: Schedule} с настройками графиков.
+                Если пустой — статусы не пишутся (нет колонок).
     """
     workbook = Workbook()
     sheet = workbook.active
@@ -56,24 +54,29 @@ def write_target(people, schedules, out_path: str):
 
     sheet.title = "УРВ"
     styles = _build_styles()
+    include_status = bool(schedules)
 
     row = 1
     for index, person in enumerate(people):
         base = pick_color(index)
         schedule = schedules.get(person["fio"])
 
-        _write_person_header(sheet, row, person["fio"], base, styles)
+        _write_person_header(
+            sheet, row, person["fio"], base, styles, include_status,
+        )
         row += 1
 
         for day in person["days"]:
             if _skip_empty_weekend(day):
                 continue
-            _write_day_row(sheet, row, day, base, schedule, styles)
+            _write_day_row(
+                sheet, row, day, base, schedule, styles, include_status,
+            )
             row += 1
 
         row += 1
 
-    _apply_column_widths(sheet)
+    _apply_column_widths(sheet, include_status)
     workbook.save(out_path)
     workbook.close()
 
@@ -88,20 +91,30 @@ def _build_styles():
     }
 
 
-def _write_person_header(sheet, row, fio, base_color, styles):
-    """Пишет шапку блока сотрудника."""
+def _write_person_header(
+    sheet, row, fio,
+    base_color, styles,
+    include_status: bool,
+):
+    """
+    Пишет шапку блока сотрудника.
+
+    Если include_status = False — пишет только 4 заголовка
+    (без колонок статусов).
+    """
     fill = PatternFill(
         "solid",
         fgColor=to_excel_color(header_color(base_color)),
     )
-    labels = (
+    labels = [
         HEADER_FIO,
         HEADER_INCOME,
         HEADER_OUTCOME,
         HEADER_TOTAL,
-        HEADER_STATUS_1,
-        HEADER_STATUS_2,
-    )
+    ]
+    if include_status:
+        labels.extend([HEADER_STATUS_1, HEADER_STATUS_2])
+
     for offset, label in enumerate(labels):
         column = OUT_COL_DATE + offset
         cell = sheet.cell(row=row, column=column, value=label)
@@ -112,8 +125,13 @@ def _write_person_header(sheet, row, fio, base_color, styles):
     sheet.cell(row=row, column=OUT_COL_DATE, value=fio)
 
 
-def _write_day_row(sheet, row, day, base_color, schedule, styles):
-    """Пишет строку одного дня с оценкой по графику."""
+def _write_day_row(sheet, row, day, base_color, schedule, styles,
+                   include_status: bool):
+    """
+    Пишет строку одного дня с оценкой по графику.
+
+    Если include_status = False — статусы не пишутся.
+    """
     income = day["income"]
     outcome = day["outcome"]
     total = calc_total(income, outcome)
@@ -121,14 +139,17 @@ def _write_day_row(sheet, row, day, base_color, schedule, styles):
     evaluation = _evaluate(income, outcome, total, schedule)
     row_fill = _pick_row_fill(base_color, evaluation.priority_status)
 
-    values = (
+    values = [
         day["date"].strftime(DATE_FORMAT_OUT),
         _resolve_income_text(income, outcome),
         outcome or "",
         total,
-        evaluation.status_late,
-        evaluation.status_incomplete,
-    )
+    ]
+    if include_status:
+        values.extend([
+            evaluation.status_late,
+            evaluation.status_incomplete,
+        ])
 
     for offset, value in enumerate(values):
         column = OUT_COL_DATE + offset
@@ -137,7 +158,8 @@ def _write_day_row(sheet, row, day, base_color, schedule, styles):
         cell.alignment = styles["center"]
         cell.border = styles["border"]
 
-    _tint_status_cells(sheet, row, evaluation)
+    if include_status:
+        _tint_status_cells(sheet, row, evaluation)
 
 
 def _evaluate(income, outcome, total, schedule):
@@ -208,15 +230,17 @@ def _resolve_income_text(income, outcome):
     return income or ""
 
 
-def _apply_column_widths(sheet):
+def _apply_column_widths(sheet, include_status: bool):
     """Задаёт ширины колонок."""
     widths = {
         "A": COL_WIDTH_FIO,
         "B": COL_WIDTH_TIME,
         "C": COL_WIDTH_TIME,
         "D": COL_WIDTH_TOTAL,
-        "E": COL_WIDTH_STATUS,
-        "F": COL_WIDTH_STATUS,
     }
+    if include_status:
+        widths["E"] = COL_WIDTH_STATUS
+        widths["F"] = COL_WIDTH_STATUS
+
     for column, width in widths.items():
         sheet.column_dimensions[column].width = width

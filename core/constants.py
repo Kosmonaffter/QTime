@@ -4,36 +4,9 @@
 Здесь собраны все «магические» значения и текстовые метки,
 чтобы их можно было менять в одном месте.
 """
-
-# ---------- Общие ----------
-APP_TITLE = "QTime — учёт рабочего времени"
-WINDOW_SIZE = "1250x750"
-WINDOW_ICON_FILE = "assets/qtime_icon.ico"
-LOGO_FILE = "assets/logo.png"
-
-# ---------- Режимы вкладки БЦ ----------
-WEEK_MODE = "week"
-MONTH_MODE = "month"
-MODE_LABEL_WEEK = "Неделя"
-MODE_LABEL_MONTH = "Месяц"
-MONTH_YEAR_LABEL_MONTH = "Месяц:"
-MONTH_YEAR_LABEL_YEAR = "Год:"
-
-# ---------- Диалог несовпадения дат ----------
-DATE_MISMATCH_TITLE = "Дата в файле не совпадает"
-DATE_MISMATCH_HEADER = "В файле заполнены даты начиная с {file_date}."
-DATE_MISMATCH_SELECTED = "Вы выбрали начало недели: {selected_date}."
-DATE_MISMATCH_QUESTION = "Как продолжить?"
-DATE_MISMATCH_BUTTON_FILE = "Использовать даты из файла"
-DATE_MISMATCH_BUTTON_SELECTED = "Использовать выбранную дату"
-DATE_MISMATCH_BUTTON_CANCEL = "Отмена"
-
-# ---------- Заголовки статусов в Excel ----------
-HEADER_STATUS_1 = "статус 1"
-HEADER_STATUS_2 = "статус 2"
-
 # ---------- Версия приложения ----------
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
+
 VERSION_CHECK_URL = (
     "https://raw.githubusercontent.com/"
     "Kosmonaffter/QTime/main/docs/version.json"
@@ -62,6 +35,34 @@ UPDATE_INSTRUCTION = (
 )
 UPDATE_BUTTON_OPEN = "Открыть страницу релиза"
 UPDATE_BUTTON_LATER = "Позже"
+
+# ---------- Общие ----------
+APP_TITLE = "QTime — учёт рабочего времени"
+WINDOW_SIZE = "1280x800"
+WINDOW_ICON_FILE = "assets/qtime_icon.ico"
+LOGO_FILE = "assets/logo.png"
+
+# ---------- Режимы вкладки БЦ ----------
+WEEK_MODE = "week"
+MONTH_MODE = "month"
+MODE_LABEL_WEEK = "Неделя"
+MODE_LABEL_MONTH = "Месяц"
+MONTH_YEAR_LABEL_MONTH = "Месяц:"
+MONTH_YEAR_LABEL_YEAR = "Год:"
+
+# ---------- Диалог несовпадения дат ----------
+DATE_MISMATCH_TITLE = "Дата в файле не совпадает"
+DATE_MISMATCH_HEADER = "В файле заполнены даты начиная с {file_date}."
+DATE_MISMATCH_SELECTED = "Вы выбрали начало недели: {selected_date}."
+DATE_MISMATCH_QUESTION = "Как продолжить?"
+DATE_MISMATCH_BUTTON_FILE = "Использовать даты из файла"
+DATE_MISMATCH_BUTTON_SELECTED = "Использовать выбранную дату"
+DATE_MISMATCH_BUTTON_CANCEL = "Отмена"
+
+# ---------- Заголовки статусов в Excel ----------
+HEADER_STATUS_1 = "статус 1"
+HEADER_STATUS_2 = "статус 2"
+HEADER_COUNT = 4    # ФИО, приход, уход, итого
 
 # ---------- Вкладки ----------
 TAB_BC_TITLE = "БЦ"

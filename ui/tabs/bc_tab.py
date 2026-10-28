@@ -138,7 +138,7 @@ class BcTab(ttk.Frame):
 
         ttk.Button(
             panel,
-            text="Открыть Файл 1",
+            text="Открыть Файл",
             command=self.choose_source,
         ).pack(side="left", padx=PAD_XS)
 
@@ -425,9 +425,6 @@ class BcTab(ttk.Frame):
 
     def _handle_read_error(self, error, start_date, mode, month, year):
         """Обрабатывает ошибки чтения, включая несовпадение дат."""
-        assert self.source_path is not None
-        assert month is not None
-        assert year is not None
         text = str(error)
         if not text.startswith(DATE_MISMATCH_PREFIX):
             messagebox.showerror(
@@ -450,28 +447,61 @@ class BcTab(ttk.Frame):
         if dialog.result is None:
             return
 
-        if dialog.result == "file":
-            new_start = date(year, month, int(file_day))
-        else:
-            new_start = start_date
-
         if not self.source_path:
             return
 
-        try:
-            self.people = read_source(
-                self.source_path,
-                new_start,
-                mode=mode,
-                month=month,
-                year=year,
-            )
-        except Exception as err:
-            messagebox.showerror(
-                DLG_TITLE_ERROR_READ,
-                humanize_error(err),
-            )
-            return
+        if dialog.result == "file":
+            # Использовать дату из файла → повторно читаем
+            new_start = date(year, month, int(file_day))
+            try:
+                self.people = read_source(
+                    self.source_path,
+                    new_start,
+                    mode=mode,
+                    month=month,
+                    year=year,
+                )
+            except Exception as err:
+                messagebox.showerror(
+                    DLG_TITLE_ERROR_READ,
+                    humanize_error(err),
+                )
+                return
+        else:
+            # Использовать выбранную дату → читаем с allow_mismatch
+            try:
+                self.people = read_source(
+                    self.source_path,
+                    start_date,
+                    mode=mode,
+                    month=month,
+                    year=year,
+                    allow_mismatch=True,
+                )
+            except Exception as err:
+                messagebox.showerror(
+                    DLG_TITLE_ERROR_READ,
+                    humanize_error(err),
+                )
+                return
+
+        # После любого варианта — открываем модалку графиков и заполняем
+        if self._use_schedule_var.get():
+            self._open_schedule_dialog()
+            if self.schedules is None:
+                self._reset_after_cancel()
+                return
+        else:
+            self.schedules = {}
+
+        self._fill_preview()
+        self._status.config(
+            text=MSG_PROCESSED.format(
+                count=len(self.people),
+                date=start_date.strftime(DATE_FORMAT_OUT),
+            ),
+            foreground=STATUS_FG_OK,
+        )
 
     def save(self):
         """Сохраняет итоговый УРВ в выбранный файл."""

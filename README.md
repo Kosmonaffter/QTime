@@ -136,6 +136,10 @@
 
 ![Календарь](docs/screenshot-calendar.png)
 
+### Пример Excel откуда брать инфу для (БЦ)
+
+![Пример Excel](docs/example_excel_1.png)
+
 ### Готовый УРВ (БЦ)
 
 ![Результат УРВ](docs/screenshot-result.png)

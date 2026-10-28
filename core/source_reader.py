@@ -10,15 +10,14 @@
 
 import calendar
 from datetime import date, timedelta
-
 from openpyxl import load_workbook
+from typing import Optional
 
 from core.constants import (
     HEADER_COLUMN_LIMIT,
     HEADER_MARKER,
     HEADER_SEARCH_LIMIT,
     MAX_DAYS,
-    MONTH_MODE,
     RESPONSIBLE_PREFIX,
     WEEK_MODE,
 )
@@ -28,8 +27,14 @@ from core.time_utils import parse_cell
 DATE_MISMATCH_PREFIX = "_DATE_MISMATCH__"
 
 
-def read_source(path: str, start_date: date, mode: str = WEEK_MODE,
-                month: int = 0, year: int = 0):
+def read_source(
+    path: str,
+    start_date: date,
+    mode: str = WEEK_MODE,
+    month: int = 0,
+    year: int = 0,
+    allow_mismatch: bool = False,
+):
     """
     Читает файл «Отработанное время за месяц».
 
@@ -55,26 +60,29 @@ def read_source(path: str, start_date: date, mode: str = WEEK_MODE,
         raise ValueError("В файле нет активного листа")
 
     layout = _find_layout(sheet)
+    first_day_number = _first_day_number(sheet, layout)
     column_index = _find_day_column(sheet, layout, start_date.day)
 
     if mode == WEEK_MODE:
-        if column_index is None:
-            # Выбранной даты нет в файле — модалка
-            first_day_number = _first_day_number(sheet, layout)
+        if (
+            not allow_mismatch
+                and first_day_number is not None
+                and first_day_number != start_date.day
+        ):
             raise ValueError(
                 f"{DATE_MISMATCH_PREFIX}"
                 f"|{first_day_number:02d}"
                 f"|{start_date.day:02d}"
             )
         days_count = 7
+        dates = _build_dates(start_date, days_count)
+        people = _read_people(sheet, layout, dates, column_index)
     else:
         total = calendar.monthrange(year, month)[1]
         days_count = min(total, MAX_DAYS)
         start_date = date(year, month, 1)
-        column_index = 0
-
-    dates = _build_dates(start_date, days_count)
-    people = _read_people(sheet, layout, dates, column_index)
+        dates = _build_dates(start_date, days_count)
+        people = _read_people_month(sheet, layout, dates)
 
     workbook.close()
     return people
@@ -188,7 +196,12 @@ def _build_dates(start_date: date, count: int):
 
 # ---------- Чтение людей ----------
 
-def _read_people(sheet, layout, dates, column_index: int = 0):
+def _read_people(
+    sheet,
+    layout,
+    dates,
+    column_index: Optional[int] = 0,
+):
     """Читает всех сотрудников, начиная со строки данных."""
     people = []
     row = layout["first_data_row"]
@@ -201,7 +214,8 @@ def _read_people(sheet, layout, dates, column_index: int = 0):
         if fio.lower().startswith(RESPONSIBLE_PREFIX):
             break
 
-        days = _read_days(sheet, row, layout, dates, column_index)
+        safe_index = column_index if column_index is not None else 0
+        days = _read_days(sheet, row, layout, dates, safe_index)
         people.append({"fio": fio, "days": days})
         row += 1
 
@@ -226,6 +240,77 @@ def _read_days(sheet, row: int, layout, dates, column_index: int = 0):
         column = first + index
         cell = sheet.cell(row=row, column=column).value
         income, outcome = parse_cell(cell)
+        days.append(
+            {
+                "date": day_date,
+                "income": income,
+                "outcome": outcome,
+                "weekday_index": day_date.weekday(),
+            }
+        )
+    return days
+
+
+def _read_people_month(sheet, layout, dates):
+    """
+    Читает людей для режима «Месяц».
+
+    Сопоставляет колонки по номеру дня из шапки.
+    Если дня нет в шапке — данные за этот день пустые.
+    """
+    day_columns = _build_day_columns(sheet, layout)
+
+    people = []
+    row = layout["first_data_row"]
+
+    while row <= sheet.max_row:
+        fio = _read_fio(sheet, row, layout)
+        if fio is None:
+            row += 1
+            continue
+        if fio.lower().startswith(RESPONSIBLE_PREFIX):
+            break
+
+        days = _read_days_month(sheet, row, dates, day_columns)
+        people.append({"fio": fio, "days": days})
+        row += 1
+
+    return people
+
+
+def _build_day_columns(sheet, layout):
+    """
+    Строит словарь {день_месяца: номер_колонки}.
+
+    Смотрит шапку файла, извлекает число из каждой ячейки.
+    """
+    header_row = layout["header_row"]
+    first_col = layout["first_day_col"]
+    last_col = sheet.max_column
+
+    mapping = {}
+    for col in range(first_col, last_col + 1):
+        raw = sheet.cell(row=header_row, column=col).value
+        number = _parse_day_number(raw)
+        if number is not None and number not in mapping:
+            mapping[number] = col
+    return mapping
+
+
+def _read_days_month(sheet, row: int, dates, day_columns):
+    """
+    Собирает данные по каждому дню месяца.
+
+    Если дня нет в шапке — пустая запись.
+    """
+    days = []
+    for day_date in dates:
+        col = day_columns.get(day_date.day)
+        if col is None:
+            income, outcome = None, None
+        else:
+            cell = sheet.cell(row=row, column=col).value
+            income, outcome = parse_cell(cell)
         days.append(
             {
                 "date": day_date,

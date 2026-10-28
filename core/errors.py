@@ -31,6 +31,10 @@ def humanize_error(error: Exception) -> str:
     Разбирает тип исключения и его текст, подбирает подходящее
     сообщение из констант.
     """
+    text = str(error)
+    if text.startswith("_DATE_MISMATCH__"):
+        return "Дата в файле не совпадает с выбранной."
+
     if isinstance(error, InvalidFileException):
         return ERR_OLD_FORMAT
 
