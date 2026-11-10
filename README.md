@@ -644,7 +644,7 @@ Excel-файл с листами по месяцам: **`Месяц Год`** (`
 1. Меняем APP_VERSION = "1.4.1" в core/constants.py.
 2. Собираем .exe.
 ``` bash
-rmdir /s /q build dist
+rm -rf build dist
 pyinstaller --noconfirm --clean QTime.spec
 ```
 3. Создаём тег v1.4.1 на GitHub.
