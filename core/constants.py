@@ -5,7 +5,7 @@
 чтобы их можно было менять в одном месте.
 """
 # ---------- Версия приложения ----------
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.4.0"
 
 VERSION_CHECK_URL = (
     "https://raw.githubusercontent.com/"

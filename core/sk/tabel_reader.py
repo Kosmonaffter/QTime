@@ -9,6 +9,8 @@
 """
 
 import calendar
+import xlrd
+from openpyxl import load_workbook
 from pathlib import Path
 
 from core.sk.constants import (
@@ -62,28 +64,37 @@ def _build_sheet_name(month: int, year: int) -> str:
 
 
 # ---------- Чтение грида ----------
-
 def _read_grid(path: str, sheet_name: str):
-    """Читает лист в список списков значений."""
+    """
+    Читает лист в список списков значений.
+
+    Если указанный лист не найден — берём первый лист.
+    """
     extension = Path(path).suffix.lower()
     if extension == XLS_EXTENSION:
         return _read_grid_xls(path, sheet_name)
     return _read_grid_xlsx(path, sheet_name)
 
 
+def _find_target_sheet(available: list, wanted: str) -> str:
+    """Ищет нужный лист, если не найден — берёт первый."""
+    if wanted in available:
+        return wanted
+    if available:
+        return available[0]
+    return ""
+
+
 def _read_grid_xlsx(path: str, sheet_name: str):
     """Читает .xlsx через openpyxl."""
-    from openpyxl import load_workbook
-
     workbook = load_workbook(path, data_only=True)
     available = list(workbook.sheetnames)
-    if sheet_name not in available:
+    target = _find_target_sheet(available, sheet_name)
+    if not target:
         workbook.close()
-        raise ValueError(
-            f"Лист «{sheet_name}» не найден в файле Табеля.\n"
-            f"Доступные листы: {', '.join(available)}"
-        )
-    sheet = workbook[sheet_name]
+        raise ValueError("В файле Табеля нет ни одного листа")
+
+    sheet = workbook[target]
 
     grid = []
     for row in sheet.iter_rows(values_only=True):
@@ -94,16 +105,13 @@ def _read_grid_xlsx(path: str, sheet_name: str):
 
 def _read_grid_xls(path: str, sheet_name: str):
     """Читает .xls через xlrd."""
-    import xlrd
-
     workbook = xlrd.open_workbook(path)
     available = workbook.sheet_names()
-    if sheet_name not in available:
-        raise ValueError(
-            f"Лист «{sheet_name}» не найден в файле Табеля.\n"
-            f"Доступные листы: {', '.join(available)}"
-        )
-    sheet = workbook.sheet_by_name(sheet_name)
+    target = _find_target_sheet(available, sheet_name)
+    if not target:
+        raise ValueError("В файле Табеля нет ни одного листа")
+
+    sheet = workbook.sheet_by_name(target)
 
     grid = []
     for row_index in range(sheet.nrows):
@@ -115,7 +123,11 @@ def _read_grid_xls(path: str, sheet_name: str):
 # ---------- Поиск структуры ----------
 
 def _find_section(grid):
-    """Ищет строку с маркером 'Склад' в колонке A."""
+    """
+    Ищет строку с маркером 'Склад' или 'Физическое лицо'.
+
+    Для общепита раздела 'Склад' нет, но есть 'Физическое лицо'.
+    """
     fio_col = TABEL_FIO_COLUMN - 1
     for row_index, row in enumerate(grid):
         if fio_col >= len(row):
@@ -123,24 +135,29 @@ def _find_section(grid):
         value = row[fio_col]
         if value is None:
             continue
-        if str(value).strip() == TABEL_SECTION_MARKER:
+        text = str(value).strip().lower()
+        if text == TABEL_SECTION_MARKER.lower():
             return row_index
+        if text == "физическое лицо":
+            return row_index - 1
     return None
 
 
 def _find_header(grid, section_row):
-    """Ищет строку с 'Фамилия' ниже строки раздела."""
+    """Ищет строку с 'Фамилия' или 'Физическое лицо'."""
     fio_col = TABEL_FIO_COLUMN - 1
-    marker = TABEL_HEADER_MARKER.lower()
-    for row_index in range(section_row + 1, len(grid)):
+    markers = (TABEL_HEADER_MARKER.lower(), "физическое лицо")
+    for row_index in range(max(0, section_row), len(grid)):
         row = grid[row_index]
         if fio_col >= len(row):
             continue
         value = row[fio_col]
         if value is None:
             continue
-        if str(value).strip().lower().startswith(marker):
-            return row_index
+        text = str(value).strip().lower()
+        for marker in markers:
+            if text.startswith(marker):
+                return row_index
     return None
 
 

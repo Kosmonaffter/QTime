@@ -5,7 +5,6 @@
 и Сохранить, таблицу итогов и таблицу дней по горизонтали.
 """
 
-import calendar
 import tkinter as tk
 from datetime import date
 from pathlib import Path
@@ -48,7 +47,6 @@ from core.sk.constants import (
     SK_SHOW_FACT_LABEL,
     SK_SHOW_TABEL_LABEL,
     SK_TAB_TREE_ROW_HEIGHT,
-    SK_TOTAL_NEGATIVE,
     SK_TOTAL_OK,
     SK_YEAR_LABEL,
 )
@@ -96,6 +94,7 @@ class SkTab(ttk.Frame):
         self._year_var = tk.StringVar(value=str(default_year))
         self._filter_late_var = tk.BooleanVar(value=False)
         self._filter_over_var = tk.BooleanVar(value=False)
+        self._is_obshchepit_var = tk.BooleanVar(value=False)
         self._show_fact_var = tk.BooleanVar(value=True)
         self._show_tabel_var = tk.BooleanVar(value=False)
 
@@ -126,10 +125,18 @@ class SkTab(ttk.Frame):
         panel = ttk.Frame(self, padding=PANEL_PADDING)
         panel.pack(fill="x")
 
-        ttk.Button(
+        self._bolid_btn = ttk.Button(
             panel,
             text=SK_OPEN_BOLID,
             command=self.choose_bolid,
+        )
+        self._bolid_btn.pack(side="left", padx=PAD_XS)
+
+        ttk.Checkbutton(
+            panel,
+            text="Общепит (Excel)",
+            variable=self._is_obshchepit_var,
+            command=self._on_obshchepit_toggle,
         ).pack(side="left", padx=PAD_XS)
 
         ttk.Button(
@@ -283,12 +290,25 @@ class SkTab(ttk.Frame):
         self._days.pack(fill="both", expand=True)
 
     # ---------- Действия ----------
+    def _on_obshchepit_toggle(self):
+        """Меняет кнопку файла в зависимости от режима."""
+        if self._is_obshchepit_var.get():
+            self._bolid_btn.config(text="Открыть Факт (Excel)")
+        else:
+            self._bolid_btn.config(text=SK_OPEN_BOLID)
 
     def choose_bolid(self):
         """Открывает диалог выбора CSV Болида."""
+        if self._is_obshchepit_var.get():
+            filetypes = (("Excel", "*.xlsx *.xls"), ("Все файлы", "*.*"))
+            title = "Выберите файл Факта (Общепит)"
+        else:
+            filetypes = BOLID_FILETYPES
+            title = "Выберите файл Болида"
+
         path = filedialog.askopenfilename(
-            title="Выберите файл Болида",
-            filetypes=BOLID_FILETYPES,
+            title=title,
+            filetypes=filetypes,
         )
         if not path:
             return
@@ -326,7 +346,12 @@ class SkTab(ttk.Frame):
             return
 
         try:
-            bolid = read_bolid(self.bolid_path)
+            if self._is_obshchepit_var.get():
+                from core.sk.obshchepit_reader import read_obshchepit
+                bolid = read_obshchepit(self.bolid_path)
+            else:
+                bolid = read_bolid(self.bolid_path)
+            
             tabel = read_tabel(self.tabel_path, month, year)
         except Exception as error:
             messagebox.showerror(
