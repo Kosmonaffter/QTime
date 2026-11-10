@@ -6,10 +6,9 @@
 """
 # ---------- Версия приложения ----------
 APP_VERSION = "1.4.0"
-
 VERSION_CHECK_URL = (
-    "https://raw.githubusercontent.com/"
-    "Kosmonaffter/QTime/main/docs/version.json"
+    "https://api.github.com/repos/"
+    "Kosmonaffter/QTime/releases/latest"
 )
 VERSION_CHECK_DELAY_MS = 2000        # задержка перед проверкой (мс)
 VERSION_CHECK_TIMEOUT = 10           # таймаут сетевого запроса (сек)

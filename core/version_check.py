@@ -4,8 +4,6 @@
 Скачивает docs/version.json и сравнивает с APP_VERSION.
 Не скачивает обновление — только сообщает о наличии новой версии.
 """
-
-import json
 from typing import Optional
 
 import requests
@@ -39,15 +37,18 @@ def is_newer(latest: str, current: str) -> bool:
 
 def fetch_version_info() -> Optional[dict]:
     """
-    Скачивает version.json.
+    Запрашивает GitHub API: последний релиз.
 
-    Возвращает dict или None при ошибке (нет сети, таймаут, битый JSON).
+    Возвращает dict или None при ошибке.
     """
     try:
         response = requests.get(
             VERSION_CHECK_URL,
             timeout=VERSION_CHECK_TIMEOUT,
-            headers={"User-Agent": "QTime-Version-Check"},
+            headers={
+                "User-Agent": "QTime-Version-Check",
+                "Accept": "application/vnd.github+json",
+            },
         )
         response.raise_for_status()
         return response.json()
@@ -59,14 +60,20 @@ def check_for_update():
     """
     Проверяет наличие новой версии.
 
+    Берёт tag_name из GitHub API (например, 'v1.4.0').
+    Сравнивает с APP_VERSION из констант.
+
     Возвращает (has_update: bool, latest_version: str | None).
     """
     info = fetch_version_info()
     if not info:
         return False, None
-    latest = info.get("version", "")
+
+    tag = info.get("tag_name", "")
+    latest = tag.lstrip("vV")
     if not latest:
         return False, None
+
     if is_newer(latest, APP_VERSION):
         return True, latest
     return False, None
